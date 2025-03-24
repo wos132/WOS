@@ -88,12 +88,20 @@
             padding: 10px;
             margin: 10px 0;
         }
+		 .login-search-bar {
+            width: 80%;
+            padding: 10px;
+            margin: 10px auto;
+            display: block;
+        }
     </style>
 </head>
 <body>
 
 <!-- Sekcja logowania -->
 <div class="container" id="loginContainer">
+	<input type="text" class="search-bar" id="searchQuery" placeholder="">
+    <button onclick="performSearch()">Szukaj</button>
     <img src="485181124_1180415833663455_1791613721497721956_n_preview_rev_1.png" alt="Logo" /> <!-- Dodano obrazek -->
     <h2>Logowanie</h2>
     <form id="loginForm" autocomplete="off">
@@ -219,6 +227,15 @@
         document.getElementById('dashboard').style.display = 'none';
         document.getElementById('loginContainer').style.display = 'block';
         document.getElementById('loginForm').reset();
+    }
+	function performSearch() {
+        const query = document.getElementById('searchQuery').value;
+        if (query) {
+            window.open(`https://www.google.com/search?q=${query}`, "_blank");
+            document.getElementById('searchQuery').value = ''; // Czyszczenie pola wyszukiwania
+        } else {
+            alert("Proszę wpisać zapytanie do wyszukania.");
+        }
     }
 </script>
 
