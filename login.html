@@ -360,17 +360,12 @@
     window.addEventListener('blur', () => localStorage.setItem('lastActivityTime', Date.now())); // Kiedy strona traci fokus
 	
 	function updateClock() {
-    fetch('https://worldtimeapi.org/api/ip')
-        .then(response => response.json())
-        .then(data => {
-            const dateTime = new Date(data.datetime);
-            const hours = String(dateTime.getHours()).padStart(2, '0');
-            const minutes = String(dateTime.getMinutes()).padStart(2, '0');
-            const seconds = String(dateTime.getSeconds()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
-            document.getElementById('clock').textContent = timeString;
-        })
-        .catch(error => console.error('Błąd pobierania godziny:', error));
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timeString = `${hours}:${minutes}:${seconds}`;
+    document.getElementById('clock').textContent = timeString;
 }
 
 // Zaktualizuj zegar co sekundę
@@ -378,6 +373,9 @@ setInterval(updateClock, 1000);
 
 // Pierwsze wywołanie, aby natychmiast pokazać czas
 updateClock();
+
+
+
 </script>
 
 </body>
