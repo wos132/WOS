@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strona Logowania</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+            flex-direction: column;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            text-align: center;
+        }
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .dashboard, .subpage {
+            display: none;
+            text-align: center;
+        }
+        .tile {
+            width: 100px;
+            height: 100px;
+            background-color: #4CAF50;
+            color: white;
+            display: inline-block;
+            margin: 10px;
+            line-height: 100px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .wide-tile {
+            width: 200px;
+            height: 100px;
+            background-color: #4CAF50;
+            color: white;
+            display: inline-block;
+            margin: 10px;
+            line-height: 100px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="loginContainer">
+    <h2>Logowanie</h2>
+    <form id="loginForm" autocomplete="off">
+        <input type="text" id="login" placeholder="Login" required autocomplete="off">
+        <input type="password" id="password" placeholder="Hasło" required>
+        <input type="password" id="pin" placeholder="PIN" required>
+        <button type="submit">Zaloguj się</button>
+    </form>
+</div>
+
+<div class="dashboard" id="dashboard">
+    <h1>W_OS Server</h1>
+    <h2>Panel użytkownika</h2>
+    <div class="tile" onclick="showSubpage()">SmartHome</div>
+    <div class="tile">Plik 2</div>
+    <div class="tile">Plik 3</div>
+    <div class="tile">Plik 4</div>
+    <div class="tile">Plik 5</div>
+    <div class="tile">Plik 6</div>
+    <div class="tile">Plik 7</div>
+    <div class="tile">Plik 8</div>
+    <button onclick="logout()" style="margin-top: 20px;">Wyloguj</button>
+</div>
+
+<div class="subpage" id="subpage">
+    <h1>SmartHome</h1>
+    <div class="wide-tile" onclick="sendGetRequest('https://fra1.blynk.cloud/external/api/update?token=xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u&v7=1')">BramaKończewice</div>
+    <div class="wide-tile" onclick="sendGetRequest('https://fra1.blynk.cloud/external/api/update?token=xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u&v8=1')">GarażKończewice</div>
+    <div class="wide-tile" onclick="sendGetRequest('https://fra1.blynk.cloud/external/api/update?token=xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u&v2=1')">WszystkoKończewice</div>
+    <div class="wide-tile" onclick="sendGetRequest('https://fra1.blynk.cloud/external/api/update?token=zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs&v3=1')">BramaŁukocin</div>
+    <button onclick="goBack()">Powrót</button>
+</div>
+
+<script>
+    const correctLogin = "lwysocki";
+    const correctPassword = "wos2025.lw";
+    const correctPin = "1322025";
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const login = document.getElementById('login').value;
+        const password = document.getElementById('password').value;
+        const pin = document.getElementById('pin').value;
+
+        if (login === correctLogin && password === correctPassword && pin === correctPin) {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        } else {
+            alert("Niepoprawne dane logowania");
+        }
+    });
+
+    function showSubpage() {
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('subpage').style.display = 'block';
+    }
+
+    function goBack() {
+        document.getElementById('subpage').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+    }
+
+    function sendGetRequest(url) {
+        fetch(url, { method: 'GET', mode: 'no-cors' })
+            .then(response => console.log('GET request sent'))
+            .catch(error => console.error('Error:', error));
+    }
+
+    function logout() {
+        document.getElementById('dashboard').style.display = 'none';
+        document.getElementById('loginContainer').style.display = 'block';
+        document.getElementById('loginForm').reset();
+    }
+</script>
+
+</body>
+</html>
