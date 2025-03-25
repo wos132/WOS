@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive - Pliki</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #808080;
+            color: white;
+        }
+
+        .tile {
+            width: 150px;
+            height: 50px;
+            background-color: #AF4CAB;
+            color: white;
+            display: inline-block;
+            margin: 10px;
+            line-height: 50px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+        }
+
+        .tile:hover {
+            background-color: #45a049;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .idle-timer {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #clock {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        let idleTime = 0;
+        let idleInterval;
+
+        function resetIdleTimer() {
+            idleTime = 0;
+            document.getElementById('idleTime').textContent = idleTime;
+            localStorage.setItem('lastActivityTime', Date.now());
+        }
+
+        function startIdleTimer() {
+            idleInterval = setInterval(() => {
+                idleTime++;
+                document.getElementById('idleTime').textContent = idleTime;
+
+                if (idleTime >= 61) {
+                    closeWindow();
+                }
+            }, 1000);
+        }
+
+        function checkIdleTime() {
+            const lastActivityTime = localStorage.getItem('lastActivityTime');
+
+            if (!lastActivityTime) {
+                resetIdleTimer();
+                startIdleTimer();
+                return;
+            }
+
+            const timeElapsed = (Date.now() - lastActivityTime) / 1000;
+            if (timeElapsed >= 61) {
+                closeWindow();
+            } else {
+                idleTime = Math.floor(timeElapsed);
+                document.getElementById('idleTime').textContent = idleTime;
+                startIdleTimer();
+            }
+        }
+
+        function closeWindow() {
+            window.close();
+        }
+
+        document.addEventListener('mousemove', resetIdleTimer);
+        document.addEventListener('keypress', resetIdleTimer);
+        document.addEventListener('click', resetIdleTimer);
+
+        window.onload = () => {
+            checkIdleTime();
+        };
+
+        window.addEventListener('focus', checkIdleTime);
+        window.addEventListener('blur', () => localStorage.setItem('lastActivityTime', Date.now()));
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</head>
+<body>
+	<img src="485181124_1180415833663455_1791613721497721956_n_preview_rev_1.png" alt="W_OS Server" /> <!-- Dodano obrazek -->
+    <h2>Twoje pliki Google Drive</h2>
+
+    <div id="clock"></div>
+    <div class="idle-timer"><span id="idleTime">0</span> s</div>
+
+    <div class="button-container">
+        <button class="tile" onclick="start()">Załaduj pliki</button>
+        <button class="tile" onclick="closeWindow()">Powrót</button>
+    </div>
+
+    <ul id="fileList"></ul>
+</body>
+</html>
