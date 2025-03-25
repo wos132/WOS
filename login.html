@@ -131,7 +131,24 @@
 		border-radius: 8px;
 		font-size: 20px;
 		font-weight: bold;
-}
+	}
+		a.tile {
+		width: 100px; /* Szerokość podobna do .tile */
+		height: 100px; /* Wysokość podobna do .tile */
+		background-color: #AF4CAB; /* Kolor tła jak przycisk */
+		color: white; /* Kolor tekstu biały */
+		display: inline-block; /* Umożliwia ustawienie wymiarów */
+		margin: 10px; /* Margines wokół elementu */
+		line-height: 100px; /* Wyrównanie tekstu w pionie */
+		border-radius: 8px; /* Zaokrąglone rogi */
+		font-weight: bold; /* Pogrubiony tekst */
+		cursor: pointer; /* Zmieniamy kursor na "rękę" */
+		text-align: center; /* Wyrównanie tekstu na środku */
+		text-decoration: none; /* Usuwa podkreślenie z linku */
+	}
+
+
+
 
 
     </style>
@@ -158,13 +175,12 @@
     <h1></h1>
     <h2>Panel użytkownika</h2>
     <div class="tile" onclick="showPinForm()">SmartHome</div>
-    <div class="tile">Arduino</div>
+	<a href="files.html" class="tile" target="_blank">Pliki</a>
     <div class="tile">W_OS</div>
     <div class="tile">RaspberryPi</div>
     <div class="tile">HTML</div>
     <div class="tile" onclick="openMail()">Mail</div>
     <div class="tile" onclick="openChatGPT()">ChatGPT</div> <!-- Przycisk ChatGPT -->
-    <div class="tile" onclick="openWeb()">WEB</div> <!-- Przycisk WEB -->
     <button onclick="logout()" style="margin-top: 20px;">Wyloguj</button>
 </div>
 
