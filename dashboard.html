@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="auth.js"></script>
+</head>
+
+<body onload="startTimer(), checkAuth()">
+
+  <!-- LICZNIK W PRAWYM GÓRNYM ROGU -->
+  <div id="timer">60</div>
+
+  <img src="logo.jpg" class="logo">
+
+  <h2>Wybierz opcję</h2>
+
+  <div class="menu">
+    <a href="opt1.html">Opcja 1</a>
+    <a href="opt2.html">Opcja 2</a>
+    <a href="opt3.html">Opcja 3</a>
+    <a href="opt4.html">Opcja 4</a>
+    <a href="opt5.html">Opcja 5</a>
+  </div>
+
+  <button onclick="logout()">Wyloguj</button>
+
+</body>
+</html>

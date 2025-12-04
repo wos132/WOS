@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Aplikacje</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="auth.js"></script>
+</head>
+
+<body onload="checkAuth(); loadApps();">
+
+  <h2>Dostępne aplikacje</h2>
+
+  <div id="appList" class="menu"></div>
+
+  <p id="error" style="color:red;"></p>
+
+  <a href="dashboard.html">Powrót</a>
+
+  <script>
+    async function loadApps() {
+      try {
+        const res = await fetch("apps.json");
+        const apps = await res.json();
+        const list = document.getElementById("appList");
+
+        apps.forEach((app, index) => {
+          const btn = document.createElement("button");
+          btn.innerText = app.name;
+
+          btn.onclick = () => askPin(app.pin, app.page);
+          list.appendChild(btn);
+        });
+
+      } catch (e) {
+        document.getElementById("error").innerText = "Błąd odczytu apps.json";
+      }
+    }
+
+    function askPin(correctPin, page) {
+      const userPin = prompt("Podaj PIN:");
+
+      if (userPin === correctPin) {
+        window.location.href = page;
+      } else {
+        alert("Błędny PIN!");
+      }
+    }
+  </script>
+
+</body>
+</html>
