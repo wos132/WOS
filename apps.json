@@ -1,7 +1,7 @@
 [
   {
     "name": "Sterowanie Bramą",
-    "pin": "1111",
+    "pin": "1111"&"1324432551",
     "page": "google.com"
   },
   {
@@ -15,3 +15,4 @@
     "page": "swiatlo.html"
   }
 ]
+
