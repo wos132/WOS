@@ -13,11 +13,7 @@
       background-color: #f6fff6;
       color: #333;
     }
-
-    h1 {
-      color: #2e7d32;
-    }
-
+    h1 { color: #2e7d32; }
     select, input, button {
       width: 100%;
       margin-top: 10px;
@@ -26,35 +22,18 @@
       border-radius: 5px;
       font-size: 16px;
     }
-
     button {
       background-color: #2e7d32;
       color: white;
       cursor: pointer;
       transition: background-color 0.3s;
     }
-
-    button:hover {
-      background-color: #1b5e20;
-    }
-
-    #pinSection, #controlSection {
-      display: none;
-      margin-top: 20px;
-    }
-
-    .status {
-      font-weight: bold;
-      margin-top: 10px;
-    }
-
-    .status-high {
-      color: #2e7d32;
-    }
-
-    .status-low {
-      color: #c62828;
-    }
+    button:hover { background-color: #1b5e20; }
+    #pinSection, #controlSection { display: none; margin-top: 20px; }
+    .status { font-weight: bold; margin-top: 10px; }
+    .status-high { color: #2e7d32; }
+    .status-low { color: #c62828; }
+    .status-icon { font-size: 24px; margin-left: 10px; vertical-align: middle; }
 
     .version {
       position: fixed;
@@ -67,22 +46,45 @@
       border-radius: 6px;
       z-index: 10;
     }
-
     .logo {
       position: fixed;
       bottom: 10px;
       left: 10px;
       z-index: 10;
+      height: 50px;
     }
-
-    .status-icon {
-      font-size: 24px;
-      margin-left: 10px;
-      vertical-align: middle;
+    /* LICZNIK W PRAWYM GÓRNYM ROGU */
+    #timer {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 10px 15px;
+      border-radius: 10px;
+      z-index: 9999;
+      min-width: 50px;
+      text-align: center;
+    }
+    a.button {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #555;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
+
+  <!-- LICZNIK 60s -->
+  <div id="timer">60</div>
+  <img src="logo.jpg" class="logo" alt="Logo">
+
   <h1>SGSPK</h1>
   <h3>"Smart Gate System Pin Kontroler"</h3>
 
@@ -92,9 +94,7 @@
     <option value="zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs">Łukocin_SGS</option>
     <option value="własny">Wpisz własny token</option>
   </select>
-
   <input id="customToken" type="text" placeholder="Wpisz własny token" style="display:none" />
-
   <button onclick="selectToken()">Dalej</button>
 
   <div id="pinSection">
@@ -114,18 +114,56 @@
     <p>
       Stan pinu <span id="pinLabel"></span>:
       <span id="pinStatus" class="status">Nieznany</span>
-      <span id="pinDot" class="status-icon">⚪</span>
+      <span id="pinDot" class="status-icon">White Circle</span>
     </p>
     <button onclick="setPin(1)">Ustaw na WYSOKI (1)</button>
     <button onclick="setPin(0)">Ustaw na NISKI (0)</button>
-    <button onclick="downloadLogs()">📄 Pobierz logi</button>
+    <button onclick="downloadLogs()">Pobierz logi</button>
   </div>
-  
-  <a href="dashboard.html" class="button">Powrót</a>
-  
-  <div class="version">Wersja: 1.0.1(Beta)</div>
-  
+
+  <a href="dashboard.html" class="button">Powrót do menu</a>
+
+  <div class="version">Wersja: 1.0.2 (z timeoutem)</div>
+
   <script>
+    // ==================== 60-SEKUNDOWY TIMER + AUTOWYLOGOWANIE ====================
+    let timeLeft = 60;
+    const timerDisplay = document.getElementById("timer");
+
+    function updateTimer() {
+      timerDisplay.textContent = timeLeft;
+      if (timeLeft <= 10) timerDisplay.style.background = "rgba(200,40,40,0.9)";
+      if (timeLeft <= 0) {
+        clearInterval(countdown);
+        window.location.href = "index.html";
+      }
+    }
+
+    let countdown = setInterval(() => {
+      timeLeft--;
+      updateTimer();
+    }, 1000);
+
+    function resetTimer() {
+      clearInterval(countdown);
+      timeLeft = 60;
+      timerDisplay.style.background = "rgba(0,0,0,0.8)";
+      updateTimer();
+      countdown = setInterval(() => {
+        timeLeft--;
+        updateTimer();
+      }, 1000);
+    }
+
+    // Reset przy każdej aktywności
+    ['mousemove','mousedown','keypress','scroll','touchstart','click','keydown'].forEach(evt => {
+      document.addEventListener(evt, resetTimer, { passive: true });
+    });
+
+    // Start timera od razu
+    resetTimer();
+
+    // ============================== RESZTA TWOJEGO KODU ==============================
     let token = "";
     let currentPin = "";
     let refreshInterval;
@@ -153,19 +191,19 @@
       } else {
         token = select.value;
       }
-
       customInput.style.display = select.value === "własny" ? "block" : "none";
       document.getElementById("pinSection").style.display = "block";
       document.getElementById("controlSection").style.display = "none";
       clearInterval(refreshInterval);
+      resetTimer(); // reset timera po akcji
     }
 
     function checkPin() {
       const pin = document.getElementById("pinSelect").value;
       currentPin = pin;
       document.getElementById("pinLabel").textContent = pin;
-
       const url = `https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`;
+
       fetch(url)
         .then(res => res.text())
         .then(value => {
@@ -174,30 +212,31 @@
           document.getElementById("controlSection").style.display = "block";
         })
         .catch(err => {
-          alert("Błąd podczas sprawdzania pinu.");
+          alert("Błąd połączenia z Blynk.");
           console.error(err);
         });
 
+      });
+
       clearInterval(refreshInterval);
       refreshInterval = setInterval(() => {
-        fetch(url)
-          .then(res => res.text())
-          .then(value => updateStatus(value));
+        fetch(url).then(r => r.text()).then(updateStatus);
       }, 1000);
+
+      resetTimer();
     }
 
     function updateStatus(value) {
       const status = document.getElementById("pinStatus");
       const dot = document.getElementById("pinDot");
-
       if (value === "1") {
         status.textContent = "WYSOKI (1)";
         status.className = "status status-high";
-        dot.textContent = "🟢";
+        dot.textContent = "Green Circle";
       } else {
         status.textContent = "NISKI (0)";
         status.className = "status status-low";
-        dot.textContent = "🔴";
+        dot.textContent = "Red Circle";
       }
     }
 
@@ -206,52 +245,47 @@
       const url = `https://fra1.blynk.cloud/external/api/update?token=${token}&${pin.toLowerCase()}=${value}`;
       fetch(url)
         .then(() => {
-          checkPin();
+          setTimeout(checkPin, 500); // odśwież stan
           logAction("Ustawiono", value);
+          resetTimer();
         })
-        .catch(() => alert("Nie udało się ustawić pinu."));
+        .catch(() => alert("Błąd ustawienia pinu"));
     }
 
     function downloadLogs() {
+      if (logs.length === 0) return alert("Brak logów do pobrania");
       const blob = new Blob([logs.join('\n')], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "SGSPK-logi.txt";
+      a.download = `SGSPK-logi_${new Date().toISOString().slice(0,10)}.txt`;
       a.click();
       URL.revokeObjectURL(url);
+      resetTimer();
     }
 
+    // Pokazywanie pola własnego tokenu
     document.getElementById("tokenSelect").addEventListener("change", e => {
       document.getElementById("customToken").style.display = e.target.value === "własny" ? "block" : "none";
     });
 
-    // === NOWY KOD: Monitorowanie wszystkich pinów na WYSOKI (1) ===
-    const monitoredPins = ["V3", "V4", "V5", "V6", "V7", "V8"];
+    // Monitorowanie wszystkich pinów (opcjonalne – zostawiam)
+    const monitoredPins = ["V3","V4","V5","V6","V7","V8"];
     let previousStates = {};
-
     function monitorAllPins() {
-      if (!token || token.length < 10) return;
-
+      if (!token) return;
       monitoredPins.forEach(pin => {
-        const url = `https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`;
-        fetch(url)
-          .then(res => res.text())
-          .then(value => {
-            if (value === "1" && previousStates[pin] !== "1") {
-              logs.push(`[${new Date().toLocaleTimeString()}] WYKRYTO zmianę na WYSOKI → ${pin} (token: ${getTokenLabel(token)})`);
+        fetch(`https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`)
+          .then(r => r.text())
+          .then(v => {
+            if (v === "1" && previousStates[pin] !== "1") {
+              logs.push(`[${new Date().toLocaleTimeString()}] ALARM: ${pin} → WYSOKI`);
             }
-            previousStates[pin] = value;
-          })
-          .catch(err => {
-            console.warn(`Błąd monitorowania pinu ${pin}`, err);
+            previousStates[pin] = v;
           });
       });
     }
-
-    setInterval(monitorAllPins, 1000);
-    // === KONIEC NOWEGO KODU ===
-
+    setInterval(monitorAllPins, 2000);
   </script>
 </body>
 </html>
