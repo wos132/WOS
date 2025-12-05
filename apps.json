@@ -5,13 +5,14 @@
     "page": "google.com"
   },
   {
-    "name": "Sterowanie Bramą",
-    "pin": "1111",
-    "page": "google.com"
+    "name": "Sterowanie Bramą2",
+    "pin": "2222",
+    "page": "goog2le.com"
   },
   {
-    "name": "Sterowanie Bramą",
-    "pin": "1111",
-    "page": "google.com"
+    "name": "Sterowanie Bramą3",
+    "pin": "3333",
+    "page": "goog3le.com"
   }
 ]
+
