@@ -75,7 +75,8 @@ async function loadApps() {
 function askPin(correctPin, page) {
   const pin = prompt("Podaj PIN do tej aplikacji:");
   if (pin === correctPin) {
-    window.location.href = page;
+    // OTWIERA ZAWSZE W NOWEJ KARCIE
+    window.open(page, '_blank', 'noopener,noreferrer');
   } else if (pin !== null) {
     alert("Błędny PIN!");
   }
@@ -88,6 +89,7 @@ window.addEventListener('load', loadApps);
 
 </body>
 </html>
+
 
 
 
