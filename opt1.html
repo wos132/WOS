@@ -18,100 +18,77 @@
   <a href="dashboard.html">Powrót</a>
 
 <script>
-async function loadApps() {
-    try {
-        const res = await fetch("apps.json");
-        const apps = await res.json();
-        const list = document.getElementById("appList");
+// ===== AUTOMATYCZNE WYLOGOWANIE PO 60s BEZCZYNNOŚCI =====
+const TIMEOUT_SECONDS = 60;
+let timeoutTimer;
 
-        apps.forEach((app) => {
-            const btn = document.createElement("button");
-            btn.innerText = app.name;
-            btn.onclick = () => askPin(app.pin, app.page);
-            list.appendChild(btn);
-        });
-    } catch (e) {
-        document.getElementById("error").innerText = "Błąd odczytu apps.json";
-        console.error(e);
+function resetTimer() {
+  clearTimeout(timeoutTimer);
+  timeoutTimer = setTimeout(() => {
+    window.location.href = "index.html";
+  }, TIMEOUT_SECONDS * 1000);
+}
+
+// Start + nasłuchiwanie aktywności
+window.addEventListener('load', () => {
+  resetTimer();
+  ['mousemove','mousedown','keypress','scroll','touchstart','click','keydown'].forEach(evt => {
+    document.addEventListener(evt, resetTimer, { passive: true });
+  });
+});
+
+// ===== ŁADOWANIE APLIKACJI Z apps.json =====
+async function loadApps() {
+  try {
+    const res = await fetch("apps.json");
+    
+    // Jeśli serwer zwróci 404 lub inny błąd
+    if (!res.ok) throw new Error(`Błąd ${res.status}: nie można wczytano apps.json`);
+
+    const apps = await res.json();
+    const list = document.getElementById("appList");
+
+    // Wyczyść poprzednią zawartość
+    list.innerHTML = "";
+
+    if (apps.length === 0) {
+      list.innerHTML = "<p style='color: orange;'>Brak aplikacji w pliku apps.json</p>";
+      return;
     }
+
+    apps.forEach(app => {
+      const btn = document.createElement("button");
+      btn.innerText = app.name || "Brak nazwy";
+      btn.onclick = () => askPin(app.pin, app.page);
+      list.appendChild(btn);
+      const br = document.createElement("br");
+      list.appendChild(br);
+    });
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("error").innerText = 
+      "Nie można wczytać apps.json – sprawdź konsolę (F12)";
+  }
 }
 
 function askPin(correctPin, page) {
-    const userPin = prompt("Podaj PIN:");
-    if (userPin === correctPin) {
-        window.location.href = page;
-    } else {
-        alert("Błędny PIN!");
-    }
+  const pin = prompt("Podaj PIN do tej aplikacji:");
+  if (pin === correctPin) {
+    window.location.href = page;
+  } else if (pin !== null) {
+    alert("Błędny PIN!");
+  }
 }
 
-// Uruchomienie funkcji po załadowaniu strony
-window.onload = loadApps;
-// Czas bezczynności w sekundach (60 sekund)
-const TIMEOUT_SECONDS = 60;
-
-let timeoutTimer;
-
-// Resetuje licznik przy każdej aktywności użytkownika
-function resetTimer() {
-  clearTimeout(timeoutTimer);
-  timeoutTimer = setTimeout(logoutAndRedirect, TIMEOUT_SECONDS * 1000);
-}
-
-// Wylogowanie i powrót do index.html
-function logoutAndRedirect() {
-  // Opcjonalnie: wyczyść localStorage/sessionStorage jeśli używasz tam autoryzacji
-  // localStorage.clear();
-  // sessionStorage.clear();
-
-  window.location.href = "index.html";
-}
-
-// Nasłuchiwanie na aktywności użytkownika
-window.onload = function() {
-  // Uruchom licznik od razu po załadowaniu strony
-  resetTimer();
-
-  // Lista zdarzeń, które resetują licznik
-  ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
-    document.addEventListener(event, resetTimer, true);
-  });
-};
-// Czas bezczynności w sekundach (60 sekund)
-const TIMEOUT_SECONDS = 60;
-
-let timeoutTimer;
-
-// Resetuje licznik przy każdej aktywności użytkownika
-function resetTimer() {
-  clearTimeout(timeoutTimer);
-  timeoutTimer = setTimeout(logoutAndRedirect, TIMEOUT_SECONDS * 1000);
-}
-
-// Wylogowanie i powrót do index.html
-function logoutAndRedirect() {
-  // Opcjonalnie: wyczyść localStorage/sessionStorage jeśli używasz tam autoryzacji
-  // localStorage.clear();
-  // sessionStorage.clear();
-
-  window.location.href = "index.html";
-}
-
-// Nasłuchiwanie na aktywności użytkownika
-window.onload = function() {
-  // Uruchom licznik od razu po załadowaniu strony
-  resetTimer();
-
-  // Lista zdarzeń, które resetują licznik
-  ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
-    document.addEventListener(event, resetTimer, true);
-  });
-};
+// Uruchom po załadowaniu strony
+window.addEventListener('load', loadApps);
 </script>
 
 
 </body>
 </html>
+
 
 
 
