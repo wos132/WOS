@@ -14,7 +14,13 @@
     "pin": "3333",
     "page": "https://wos132.github.io/683512873457580934345018485697132658965983/W_OS_VM.html"
   }
+  {
+    "name": "Test",
+    "pin": "4444",
+    "page": "nic.html"
+  }
 ]
+
 
 
 
