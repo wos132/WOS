@@ -47,10 +47,41 @@ function askPin(correctPin, page) {
 
 // Uruchomienie funkcji po załadowaniu strony
 window.onload = loadApps;
+// Czas bezczynności w sekundach (60 sekund)
+const TIMEOUT_SECONDS = 60;
+
+let timeoutTimer;
+
+// Resetuje licznik przy każdej aktywności użytkownika
+function resetTimer() {
+  clearTimeout(timeoutTimer);
+  timeoutTimer = setTimeout(logoutAndRedirect, TIMEOUT_SECONDS * 1000);
+}
+
+// Wylogowanie i powrót do index.html
+function logoutAndRedirect() {
+  // Opcjonalnie: wyczyść localStorage/sessionStorage jeśli używasz tam autoryzacji
+  // localStorage.clear();
+  // sessionStorage.clear();
+
+  window.location.href = "index.html";
+}
+
+// Nasłuchiwanie na aktywności użytkownika
+window.onload = function() {
+  // Uruchom licznik od razu po załadowaniu strony
+  resetTimer();
+
+  // Lista zdarzeń, które resetują licznik
+  ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart', 'click'].forEach(event => {
+    document.addEventListener(event, resetTimer, true);
+  });
+};
 </script>
 
 
 </body>
 </html>
+
 
 
