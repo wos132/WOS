@@ -6,16 +6,12 @@
   <link rel="stylesheet" href="style.css">
   <script src="auth.js"></script>
 </head>
-
 <body onload="startTimer(), checkAuth()">
-
   <!-- LICZNIK W PRAWYM GÓRNYM ROGU -->
   <div id="timer">60</div>
 
   <img src="logo.jpg" class="logo">
-
   <h2>Wybierz opcję</h2>
-
   <div class="menu">
     <a href="opt1.html">Aplikacje</a>
     <a href="opt2.html">SGSPK</a>
@@ -26,8 +22,31 @@
 
   <button onclick="logout()">Wyloguj</button>
 
+  <!-- PRZYCISK ODŚWIEŻENIA WSZYSTKICH ZASOBÓW (PRAWY DOLNY RÓG) -->
+  <button 
+      title="Odśwież wszystkie pliki (CSS, JS, obrazy) bez cache" 
+      style="position: fixed; bottom: 15px; right: 15px; z-index: 9999; 
+             padding: 10px 15px; background: #d32f2f; color: white; 
+             border: none; border-radius: 6px; cursor: pointer; 
+             font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"
+      onclick="hardRefresh()">
+    🔄 Odśwież wszystko
+  </button>
+
+  <!-- Skrypt odpowiedzialny za twarde odświeżenie -->
+  <script>
+    function hardRefresh() {
+      // Potwierdzenie (opcjonalne – możesz usunąć jeśli nie chcesz)
+      if (confirm("Czy na pewno chcesz odświeżyć wszystkie pliki (CSS, JS, obrazy) z serwera?")) {
+        // Wymusza pobranie wszystkich zasobów od nowa (Ctrl+F5 w przeglądarce)
+        window.location.reload(true); // starsze przeglądarki
+        
+        // Nowoczesny sposób – dodajemy unikalny parametr do URL
+        const url = new URL(window.location.href);
+        url.searchParams.set('cache_bust', Date.now());
+        window.location.href = url.toString();
+      }
+    }
+  </script>
 </body>
 </html>
-
-
-
