@@ -1,11 +1,11 @@
 [
   {
-    "name": "SGS Łukocin",
+    "name": "SGS Kończewice",
     "pin": "1111",
     "page": "https://wos132.github.io/X7F9L2KQ3WMA6PZ1T8RVD5E0GJYNH4CUBX93SLTAEKMWPYHZQ/9TQWM27KZJ4XPEFUVAYLB80S3H1RCDGN6IOK5NMABXWT7EZLU.html"
   },
   {
-    "name": "SGS Kończewice",
+    "name": "SGS Łukocin",
     "pin": "2222",
     "page": "https://wos132.github.io/A7F92XLCMEQ18ZTY4KBNWDG0R3HVPJ5USX9ILT2C6QMYORBFJN/K3ZP1VYXNLAQ7W9BUDMRCJ4TGH82OEF56SILNK0QMYXPV3RETG.html"
   },
@@ -13,13 +13,9 @@
     "name": "SVMS Działka",
     "pin": "3333",
     "page": "https://wos132.github.io/683512873457580934345018485697132658965983/W_OS_VM.html"
-  },
-  {
-    "name": "Test",
-    "pin": "4444",
-    "page": "nic.html"
   }
 ]
+
 
 
 
