@@ -23,30 +23,55 @@
   <button onclick="logout()">Wyloguj</button>
 
   <!-- PRZYCISK ODŚWIEŻENIA WSZYSTKICH ZASOBÓW (PRAWY DOLNY RÓG) -->
-  <button 
-      title="Odśwież wszystkie pliki (CSS, JS, obrazy) bez cache" 
-      style="position: fixed; bottom: 15px; right: 15px; z-index: 9999; 
-             padding: 10px 15px; background: #d32f2f; color: white; 
-             border: none; border-radius: 6px; cursor: pointer; 
-             font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"
-      onclick="hardRefresh()">
-    🔄 Odśwież wszystko
-  </button>
+  <!-- MAŁY PRZYCISK ODŚWIEŻENIA W PRAWYM DOLNYM ROGU -->
+<button 
+    title="Odśwież wszystkie zasoby (CSS, JS, obrazy) bez cache" 
+    id="hardRefreshBtn"
+    onclick="hardRefresh()">
+  ↻
+</button>
 
-  <!-- Skrypt odpowiedzialny za twarde odświeżenie -->
-  <script>
-    function hardRefresh() {
-      // Potwierdzenie (opcjonalne – możesz usunąć jeśli nie chcesz)
-      if (confirm("Czy na pewno chcesz odświeżyć wszystkie pliki (CSS, JS, obrazy) z serwera?")) {
-        // Wymusza pobranie wszystkich zasobów od nowa (Ctrl+F5 w przeglądarce)
-        window.location.reload(true); // starsze przeglądarki
-        
-        // Nowoczesny sposób – dodajemy unikalny parametr do URL
-        const url = new URL(window.location.href);
-        url.searchParams.set('cache_bust', Date.now());
-        window.location.href = url.toString();
-      }
-    }
-  </script>
+<script>
+function hardRefresh() {
+  const url = new URL(window.location.href.split('?')[0]);
+  url.searchParams.set('v', Date.now());
+  window.location.href = url.toString();
+}
+</script>
+
+<style>
+#hardRefreshBtn {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 9999;
+  
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  
+  border: none;
+  border-radius: 50%;          /* okrągły */
+  cursor: pointer;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  transition: all 0.2s ease;
+}
+
+#hardRefreshBtn:hover {
+  background: rgba(211, 47, 47, 0.9);   /* czerwony przy najechaniu */
+  transform: scale(1.1) rotate(180deg); /* delikatne powiększenie + obrót */
+}
+</style>
 </body>
 </html>
+
