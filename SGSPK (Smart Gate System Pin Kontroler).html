@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>SGSPK</title>
+  <link rel="icon" href="Brama SGS.png" type="image/png" />
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      background-color: #f6fff6;
+      color: #333;
+    }
+
+    h1 {
+      color: #2e7d32;
+    }
+
+    select, input, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #2e7d32;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #1b5e20;
+    }
+
+    #pinSection, #controlSection {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .status {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .status-high {
+      color: #2e7d32;
+    }
+
+    .status-low {
+      color: #c62828;
+    }
+
+    .version {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      color: white;
+      font-size: 14px;
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 5px 10px;
+      border-radius: 6px;
+      z-index: 10;
+    }
+
+    .logo {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      z-index: 10;
+    }
+
+    .status-icon {
+      font-size: 24px;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <h1>SGSPK</h1>
+  <h3>"Smart Gate System Pin Kontroler"</h3>
+
+  <label>Wybierz token:</label>
+  <select id="tokenSelect">
+    <option value="xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u">Kończewice_SGS</option>
+    <option value="zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs">Łukocin_SGS</option>
+    <option value="własny">Wpisz własny token</option>
+  </select>
+
+  <input id="customToken" type="text" placeholder="Wpisz własny token" style="display:none" />
+
+  <button onclick="selectToken()">Dalej</button>
+
+  <div id="pinSection">
+    <label>Wybierz pin (V3–V8):</label>
+    <select id="pinSelect">
+      <option value="V3">V3</option>
+      <option value="V4">V4</option>
+      <option value="V5">V5</option>
+      <option value="V6">V6</option>
+      <option value="V7">V7</option>
+      <option value="V8">V8</option>
+    </select>
+    <button onclick="checkPin()">Sprawdź stan pinu</button>
+  </div>
+
+  <div id="controlSection">
+    <p>
+      Stan pinu <span id="pinLabel"></span>:
+      <span id="pinStatus" class="status">Nieznany</span>
+      <span id="pinDot" class="status-icon">⚪</span>
+    </p>
+    <button onclick="setPin(1)">Ustaw na WYSOKI (1)</button>
+    <button onclick="setPin(0)">Ustaw na NISKI (0)</button>
+    <button onclick="downloadLogs()">📄 Pobierz logi</button>
+  </div>
+
+  <div class="version">Wersja: 1.0.1(Beta)</div>
+
+  <script>
+    let token = "";
+    let currentPin = "";
+    let refreshInterval;
+    let logs = [];
+
+    function getTokenLabel(t) {
+      if (t === "xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u") return "Kończewice_SGS";
+      if (t === "zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs") return "Łukocin_SGS";
+      return "********" + t.slice(-4);
+    }
+
+    function logAction(action, value) {
+      const time = new Date().toLocaleTimeString();
+      const label = getTokenLabel(token);
+      logs.push(`[${time}] ${action} pin ${currentPin} → ${value} (token: ${label})`);
+    }
+
+    function selectToken() {
+      const select = document.getElementById("tokenSelect");
+      const customInput = document.getElementById("customToken");
+      if (select.value === "własny") {
+        const custom = customInput.value.trim();
+        if (custom.length < 10) return alert("Nieprawidłowy token.");
+        token = custom;
+      } else {
+        token = select.value;
+      }
+
+      customInput.style.display = select.value === "własny" ? "block" : "none";
+      document.getElementById("pinSection").style.display = "block";
+      document.getElementById("controlSection").style.display = "none";
+      clearInterval(refreshInterval);
+    }
+
+    function checkPin() {
+      const pin = document.getElementById("pinSelect").value;
+      currentPin = pin;
+      document.getElementById("pinLabel").textContent = pin;
+
+      const url = `https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`;
+      fetch(url)
+        .then(res => res.text())
+        .then(value => {
+          updateStatus(value);
+          logAction("Odczytano", value);
+          document.getElementById("controlSection").style.display = "block";
+        })
+        .catch(err => {
+          alert("Błąd podczas sprawdzania pinu.");
+          console.error(err);
+        });
+
+      clearInterval(refreshInterval);
+      refreshInterval = setInterval(() => {
+        fetch(url)
+          .then(res => res.text())
+          .then(value => updateStatus(value));
+      }, 1000);
+    }
+
+    function updateStatus(value) {
+      const status = document.getElementById("pinStatus");
+      const dot = document.getElementById("pinDot");
+
+      if (value === "1") {
+        status.textContent = "WYSOKI (1)";
+        status.className = "status status-high";
+        dot.textContent = "🟢";
+      } else {
+        status.textContent = "NISKI (0)";
+        status.className = "status status-low";
+        dot.textContent = "🔴";
+      }
+    }
+
+    function setPin(value) {
+      const pin = currentPin;
+      const url = `https://fra1.blynk.cloud/external/api/update?token=${token}&${pin.toLowerCase()}=${value}`;
+      fetch(url)
+        .then(() => {
+          checkPin();
+          logAction("Ustawiono", value);
+        })
+        .catch(() => alert("Nie udało się ustawić pinu."));
+    }
+
+    function downloadLogs() {
+      const blob = new Blob([logs.join('\n')], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "SGSPK-logi.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("tokenSelect").addEventListener("change", e => {
+      document.getElementById("customToken").style.display = e.target.value === "własny" ? "block" : "none";
+    });
+
+    // === NOWY KOD: Monitorowanie wszystkich pinów na WYSOKI (1) ===
+    const monitoredPins = ["V3", "V4", "V5", "V6", "V7", "V8"];
+    let previousStates = {};
+
+    function monitorAllPins() {
+      if (!token || token.length < 10) return;
+
+      monitoredPins.forEach(pin => {
+        const url = `https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`;
+        fetch(url)
+          .then(res => res.text())
+          .then(value => {
+            if (value === "1" && previousStates[pin] !== "1") {
+              logs.push(`[${new Date().toLocaleTimeString()}] WYKRYTO zmianę na WYSOKI → ${pin} (token: ${getTokenLabel(token)})`);
+            }
+            previousStates[pin] = value;
+          })
+          .catch(err => {
+            console.warn(`Błąd monitorowania pinu ${pin}`, err);
+          });
+      });
+    }
+
+    setInterval(monitorAllPins, 1000);
+    // === KONIEC NOWEGO KODU ===
+
+  </script>
+</body>
+</html>
