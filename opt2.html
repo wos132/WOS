@@ -126,166 +126,141 @@
   <div class="version">Wersja: 1.0.2 (z timeoutem)</div>
 
   <script>
-    // ==================== 60-SEKUNDOWY TIMER + AUTOWYLOGOWANIE ====================
-    let timeLeft = 60;
-    const timerDisplay = document.getElementById("timer");
+// ======== 60-SEKUNDOWY LICZNIK + AUTOWYLOGOWANIE ========
+let timeLeft = 60;
+const timerDisplay = document.getElementById("timer");
+let countdownInterval = null;
 
-    function updateTimer() {
-      timerDisplay.textContent = timeLeft;
-      if (timeLeft <= 10) timerDisplay.style.background = "rgba(200,40,40,0.9)";
-      if (timeLeft <= 0) {
-        clearInterval(countdown);
-        window.location.href = "index.html";
-      }
+function startTimer() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  timeLeft = 60;
+  timerDisplay.textContent = timeLeft;
+  timerDisplay.style.background = "rgba(0,0,0,0.8)";
+
+  countdownInterval = setInterval(() => {
+    timeLeft--;
+    timerDisplay.textContent = timeLeft;
+    if (timeLeft <= 10) timerDisplay.style.background = "rgba(200,40,40,0.95)";
+    if (timeLeft <= 0) {
+      clearInterval(countdownInterval);
+      window.location.href = "index.html";
     }
+  }, 1000);
+}
 
-    let countdown = setInterval(() => {
-      timeLeft--;
-      updateTimer();
-    }, 1000);
+function resetTimer() {
+  startTimer();
+}
 
-    function resetTimer() {
-      clearInterval(countdown);
-      timeLeft = 60;
-      timerDisplay.style.background = "rgba(0,0,0,0.8)";
-      updateTimer();
-      countdown = setInterval(() => {
-        timeLeft--;
-        updateTimer();
-      }, 1000);
-    }
+const events = ['mousemove','mousedown','keypress','keydown','scroll','touchstart','touchmove','click'];
+events.forEach(e => document.addEventListener(e, resetTimer, { passive: true }));
 
-    // Reset przy każdej aktywności
-    ['mousemove','mousedown','keypress','scroll','touchstart','click','keydown'].forEach(evt => {
-      document.addEventListener(evt, resetTimer, { passive: true });
-    });
+window.addEventListener('load', startTimer);
 
-    // Start timera od razu
+// ======== RESZTA FUNKCJI SGSPK (bez zmian) ========
+let token = "";
+let currentPin = "";
+let refreshInterval;
+let logs = [];
+
+function getTokenLabel(t) {
+  if (t === "xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u") return "Kończewice_SGS";
+  if (t === "zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs") return "Łukocin_SGS";
+  return "********" + t.slice(-4);
+}
+
+function logAction(action, value) {
+  const time = new Date().toLocaleTimeString();
+  const label = getTokenLabel(token);
+  logs.push(`[${time}] ${action} pin ${currentPin} → ${value} (token: ${label})`);
+}
+
+function selectToken() {
+  const select = document.getElementById("tokenSelect");
+  const customInput = document.getElementById("customToken");
+  if (select.value === "własny") {
+    const custom = customInput.value.trim();
+    if (custom.length < 10) return alert("Nieprawidłowy token.");
+    token = custom;
+  } else {
+    token = select.value;
+  }
+  customInput.style.display = select.value === "własny" ? "block" : "none";
+  document.getElementById("pinSection").style.display = "block";
+  document.getElementById("controlSection").style.display = "none";
+  clearInterval(refreshInterval);
+  resetTimer(); // ważne!
+}
+
+function checkPin() {
+  const pin = document.getElementById("pinSelect").value;
+  currentPin = pin;
+  document.getElementById("pinLabel").textContent = pin;
+  const url = `https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`;
+
+  fetch(url).then(r => r.text()).then(v => {
+    updateStatus(v);
+    logAction("Odczytano", v);
+    document.getElementById("controlSection").style.display = "block";
+  }).catch(() => alert("Błąd połączenia"));
+
+  clearInterval(refreshInterval);
+  refreshInterval = setInterval(() => fetch(url).then(r => r.text()).then(updateStatus), 1000);
+  resetTimer();
+}
+
+function updateStatus(value) {
+  const s = document.getElementById("pinStatus");
+  const d = document.getElementById("pinDot");
+  if (value === "1") {
+    s.textContent = "WYSOKI (1)";
+    s.className = "status status-high";
+    d.textContent = "Green Circle";
+  } else {
+    s.textContent = "NISKI (0)";
+    s.className = "status status-low";
+    d.textContent = "Red Circle";
+  }
+}
+
+function setPin(val) {
+  const url = `https://fra1.blynk.cloud/external/api/update?token=${token}&${currentPin.toLowerCase()}=${val}`;
+  fetch(url).then(() => {
+    setTimeout(checkPin, 400);
+    logAction("Ustawiono", val);
     resetTimer();
+  }).catch(() => alert("Błąd"));
+}
 
-    // ============================== RESZTA TWOJEGO KODU ==============================
-    let token = "";
-    let currentPin = "";
-    let refreshInterval;
-    let logs = [];
+function downloadLogs() {
+  if (!logs.length) return alert("Brak logów");
+  const blob = new Blob([logs.join("\n")], {type:"text/plain"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "SGSPK-logi.txt";
+  a.click();
+  resetTimer();
+}
 
-    function getTokenLabel(t) {
-      if (t === "xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u") return "Kończewice_SGS";
-      if (t === "zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs") return "Łukocin_SGS";
-      return "********" + t.slice(-4);
-    }
+document.getElementById("tokenSelect").addEventListener("change", e => {
+  document.getElementById("customToken").style.display = e.target.value==="własny"?"block":"none";
+  resetTimer();
+});
 
-    function logAction(action, value) {
-      const time = new Date().toLocaleTimeString();
-      const label = getTokenLabel(token);
-      logs.push(`[${time}] ${action} pin ${currentPin} → ${value} (token: ${label})`);
-    }
-
-    function selectToken() {
-      const select = document.getElementById("tokenSelect");
-      const customInput = document.getElementById("customToken");
-      if (select.value === "własny") {
-        const custom = customInput.value.trim();
-        if (custom.length < 10) return alert("Nieprawidłowy token.");
-        token = custom;
-      } else {
-        token = select.value;
-      }
-      customInput.style.display = select.value === "własny" ? "block" : "none";
-      document.getElementById("pinSection").style.display = "block";
-      document.getElementById("controlSection").style.display = "none";
-      clearInterval(refreshInterval);
-      resetTimer(); // reset timera po akcji
-    }
-
-    function checkPin() {
-      const pin = document.getElementById("pinSelect").value;
-      currentPin = pin;
-      document.getElementById("pinLabel").textContent = pin;
-      const url = `https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`;
-
-      fetch(url)
-        .then(res => res.text())
-        .then(value => {
-          updateStatus(value);
-          logAction("Odczytano", value);
-          document.getElementById("controlSection").style.display = "block";
-        })
-        .catch(err => {
-          alert("Błąd połączenia z Blynk.");
-          console.error(err);
-        });
-
+// opcjonalny monitoring wszystkich pinów
+const monitoredPins = ["V3","V4","V5","V6","V7","V8"];
+let prev = {};
+setInterval(() => {
+  if (!token) return;
+  monitoredPins.forEach(p => {
+    fetch(`https://fra1.blynk.cloud/external/api/get?token=${token}&${p.toLowerCase()}`)
+      .then(r=>r.text())
+      .then(v => {
+        if (v==="1" && prev[p]!=="1") logs.push(`[${new Date().toLocaleTimeString()}] ALARM: ${p} → WYSOKI`);
+        prev[p] = v;
       });
-
-      clearInterval(refreshInterval);
-      refreshInterval = setInterval(() => {
-        fetch(url).then(r => r.text()).then(updateStatus);
-      }, 1000);
-
-      resetTimer();
-    }
-
-    function updateStatus(value) {
-      const status = document.getElementById("pinStatus");
-      const dot = document.getElementById("pinDot");
-      if (value === "1") {
-        status.textContent = "WYSOKI (1)";
-        status.className = "status status-high";
-        dot.textContent = "Green Circle";
-      } else {
-        status.textContent = "NISKI (0)";
-        status.className = "status status-low";
-        dot.textContent = "Red Circle";
-      }
-    }
-
-    function setPin(value) {
-      const pin = currentPin;
-      const url = `https://fra1.blynk.cloud/external/api/update?token=${token}&${pin.toLowerCase()}=${value}`;
-      fetch(url)
-        .then(() => {
-          setTimeout(checkPin, 500); // odśwież stan
-          logAction("Ustawiono", value);
-          resetTimer();
-        })
-        .catch(() => alert("Błąd ustawienia pinu"));
-    }
-
-    function downloadLogs() {
-      if (logs.length === 0) return alert("Brak logów do pobrania");
-      const blob = new Blob([logs.join('\n')], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `SGSPK-logi_${new Date().toISOString().slice(0,10)}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-      resetTimer();
-    }
-
-    // Pokazywanie pola własnego tokenu
-    document.getElementById("tokenSelect").addEventListener("change", e => {
-      document.getElementById("customToken").style.display = e.target.value === "własny" ? "block" : "none";
-    });
-
-    // Monitorowanie wszystkich pinów (opcjonalne – zostawiam)
-    const monitoredPins = ["V3","V4","V5","V6","V7","V8"];
-    let previousStates = {};
-    function monitorAllPins() {
-      if (!token) return;
-      monitoredPins.forEach(pin => {
-        fetch(`https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`)
-          .then(r => r.text())
-          .then(v => {
-            if (v === "1" && previousStates[pin] !== "1") {
-              logs.push(`[${new Date().toLocaleTimeString()}] ALARM: ${pin} → WYSOKI`);
-            }
-            previousStates[pin] = v;
-          });
-      });
-    }
-    setInterval(monitorAllPins, 2000);
-  </script>
+  });
+}, 2000);
+</script>
 </body>
 </html>
