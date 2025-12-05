@@ -17,36 +17,31 @@
 
   <a href="dashboard.html">Powrót</a>
 
-  <script>
-    async function loadApps() {
-      try {
-        const res = await fetch("apps.json");
-        const apps = await res.json();
-        const list = document.getElementById("appList");
+<script>
+  let expectedPin = "";
+  let targetPage = "";
 
-        apps.forEach((app, index) => {
-          const btn = document.createElement("button");
-          btn.innerText = app.name;
+  function askPin(correctPin, page) {
+    expectedPin = correctPin;
+    targetPage = page;
 
-          btn.onclick = () => askPin(app.pin, app.page);
-          list.appendChild(btn);
-        });
+    document.getElementById("pinInput").value = "";
+    document.getElementById("pinPopup").style.display = "block";
+  }
 
-      } catch (e) {
-        document.getElementById("error").innerText = "Błąd odczytu apps.json";
-      }
+  function checkPin() {
+    const userPin = document.getElementById("pinInput").value;
+
+    if (userPin === expectedPin) {
+      window.location.href = targetPage;
+    } else {
+      alert("Błędny PIN!");
     }
 
-    function askPin(correctPin, page) {
-      const userPin = prompt("Podaj PIN:");
-
-      if (userPin === correctPin) {
-        window.location.href = page;
-      } else {
-        alert("Błędny PIN!");
-      }
-    }
-  </script>
+    document.getElementById("pinPopup").style.display = "none";
+  }
+</script>
 
 </body>
 </html>
+
