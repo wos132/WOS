@@ -17,54 +17,36 @@
 
   <a href="dashboard.html">Powrót</a>
 
- <script>
-  let userPin = null;
+  <script>
+    async function loadApps() {
+      try {
+        const res = await fetch("apps.json");
+        const apps = await res.json();
+        const list = document.getElementById("appList");
 
-  // Wczytaj PIN użytkownika z credentials.json
-  async function loadUserPin() {
-    try {
-      const res = await fetch("credentials.json");
-      const data = await res.json();
-      userPin = data.pin;
-    } catch (e) {
-      console.error("Błąd odczytu credentials.json");
+        apps.forEach((app, index) => {
+          const btn = document.createElement("button");
+          btn.innerText = app.name;
+
+          btn.onclick = () => askPin(app.pin, app.page);
+          list.appendChild(btn);
+        });
+
+      } catch (e) {
+        document.getElementById("error").innerText = "Błąd odczytu apps.json";
+      }
     }
-  }
 
-  // Wczytaj aplikacje
-  async function loadApps() {
-    try {
-      await loadUserPin(); // Najpierw wczytaj PIN użytkownika
+    function askPin(correctPin, page) {
+      const userPin = prompt("Podaj PIN:");
 
-      const res = await fetch("apps.json");
-      const apps = await res.json();
-      const list = document.getElementById("appList");
-
-      apps.forEach(app => {
-        const btn = document.createElement("button");
-        btn.innerText = app.name;
-
-        btn.onclick = () => askPin(app.pin, app.page);
-        list.appendChild(btn);
-      });
-
-    } catch (e) {
-      document.getElementById("error").innerText = "Błąd odczytu apps.json";
+      if (userPin === correctPin) {
+        window.location.href = page;
+      } else {
+        alert("Błędny PIN!");
+      }
     }
-  }
-
-  // Sprawdzanie PIN-u
-  function askPin(correctPin, page) {
-    const enteredPin = prompt("Podaj PIN:");
-
-    if (enteredPin === correctPin || enteredPin === userPin) {
-      window.location.href = page;
-    } else {
-      alert("Błędny PIN!");
-    }
-  }
-</script>
+  </script>
 
 </body>
 </html>
-
