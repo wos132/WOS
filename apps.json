@@ -3,15 +3,6 @@
     "name": "Sterowanie Bramą",
     "pin": "1111",
     "page": "google.com"
-  },
-  {
-    "name": "Monitoring",
-    "pin": "2222",
-    "page": "monitoring.html"
-  },
-  {
-    "name": "Oświetlenie",
-    "pin": "3333",
-    "page": "swiatlo.html"
   }
 ]
+
