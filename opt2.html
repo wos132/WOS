@@ -34,7 +34,6 @@
     .status-high { color: #2e7d32; }
     .status-low { color: #c62828; }
     .status-icon { font-size: 24px; margin-left: 10px; vertical-align: middle; }
-
     .version {
       position: fixed;
       bottom: 10px;
@@ -80,14 +79,11 @@
   </style>
 </head>
 <body>
-
   <!-- LICZNIK 60s -->
   <div id="timer">60</div>
   <img src="logo.jpg" class="logo" alt="Logo">
-
   <h1>SGSPK</h1>
   <h3>"Smart Gate System Pin Kontroler"</h3>
-
   <label>Wybierz token:</label>
   <select id="tokenSelect">
     <option value="xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u">Kończewice_SGS</option>
@@ -96,47 +92,56 @@
   </select>
   <input id="customToken" type="text" placeholder="Wpisz własny token" style="display:none" />
   <button onclick="selectToken()">Dalej</button>
-
   <div id="pinSection">
-    <label>Wybierz pin (V3–V8):</label>
+    <label>Wybierz pin (V0–V20):</label>
     <select id="pinSelect">
+      <!-- Piny od V0 do V20 -->
+      <option value="V0">V0</option>
+      <option value="V1">V1</option>
+      <option value="V2">V2</option>
       <option value="V3">V3</option>
       <option value="V4">V4</option>
       <option value="V5">V5</option>
       <option value="V6">V6</option>
       <option value="V7">V7</option>
       <option value="V8">V8</option>
+      <option value="V9">V9</option>
+      <option value="V10">V10</option>
+      <option value="V11">V11</option>
+      <option value="V12">V12</option>
+      <option value="V13">V13</option>
+      <option value="V14">V14</option>
+      <option value="V15">V15</option>
+      <option value="V16">V16</option>
+      <option value="V17">V17</option>
+      <option value="V18">V18</option>
+      <option value="V19">V19</option>
+      <option value="V20">V20</option>
     </select>
     <button onclick="checkPin()">Sprawdź stan pinu</button>
   </div>
-
   <div id="controlSection">
     <p>
       Stan pinu <span id="pinLabel"></span>:
       <span id="pinStatus" class="status">Nieznany</span>
-      <span id="pinDot" class="status-icon">White Circle</span>
+      <span id="pinDot" class="status-icon">●</span>
     </p>
     <button onclick="setPin(1)">Ustaw na WYSOKI (1)</button>
     <button onclick="setPin(0)">Ustaw na NISKI (0)</button>
     <button onclick="downloadLogs()">Pobierz logi</button>
   </div>
-
   <a href="dashboard.html" class="button">Powrót do menu</a>
-
   <div class="version">Wersja: 1.0.2 (z timeoutem)</div>
-
   <script>
 // ======== 60-SEKUNDOWY LICZNIK + AUTOWYLOGOWANIE ========
 let timeLeft = 60;
 const timerDisplay = document.getElementById("timer");
 let countdownInterval = null;
-
 function startTimer() {
   if (countdownInterval) clearInterval(countdownInterval);
   timeLeft = 60;
   timerDisplay.textContent = timeLeft;
   timerDisplay.style.background = "rgba(0,0,0,0.8)";
-
   countdownInterval = setInterval(() => {
     timeLeft--;
     timerDisplay.textContent = timeLeft;
@@ -147,34 +152,27 @@ function startTimer() {
     }
   }, 1000);
 }
-
 function resetTimer() {
   startTimer();
 }
-
 const events = ['mousemove','mousedown','keypress','keydown','scroll','touchstart','touchmove','click'];
 events.forEach(e => document.addEventListener(e, resetTimer, { passive: true }));
-
 window.addEventListener('load', startTimer);
-
 // ======== RESZTA FUNKCJI SGSPK (bez zmian) ========
 let token = "";
 let currentPin = "";
 let refreshInterval;
 let logs = [];
-
 function getTokenLabel(t) {
   if (t === "xe3c5ha8FWig5W-nL9ULmIphEo_9lq8u") return "Kończewice_SGS";
   if (t === "zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs") return "Łukocin_SGS";
   return "********" + t.slice(-4);
 }
-
 function logAction(action, value) {
   const time = new Date().toLocaleTimeString();
   const label = getTokenLabel(token);
   logs.push(`[${time}] ${action} pin ${currentPin} → ${value} (token: ${label})`);
 }
-
 function selectToken() {
   const select = document.getElementById("tokenSelect");
   const customInput = document.getElementById("customToken");
@@ -191,38 +189,33 @@ function selectToken() {
   clearInterval(refreshInterval);
   resetTimer(); // ważne!
 }
-
 function checkPin() {
   const pin = document.getElementById("pinSelect").value;
   currentPin = pin;
   document.getElementById("pinLabel").textContent = pin;
   const url = `https://fra1.blynk.cloud/external/api/get?token=${token}&${pin.toLowerCase()}`;
-
   fetch(url).then(r => r.text()).then(v => {
     updateStatus(v);
     logAction("Odczytano", v);
     document.getElementById("controlSection").style.display = "block";
   }).catch(() => alert("Błąd połączenia"));
-
   clearInterval(refreshInterval);
   refreshInterval = setInterval(() => fetch(url).then(r => r.text()).then(updateStatus), 1000);
   resetTimer();
 }
-
 function updateStatus(value) {
   const s = document.getElementById("pinStatus");
   const d = document.getElementById("pinDot");
   if (value === "1") {
     s.textContent = "WYSOKI (1)";
     s.className = "status status-high";
-    d.textContent = "Green Circle";
+    d.textContent = "🟢";
   } else {
     s.textContent = "NISKI (0)";
     s.className = "status status-low";
-    d.textContent = "Red Circle";
+    d.textContent = "🔴";
   }
 }
-
 function setPin(val) {
   const url = `https://fra1.blynk.cloud/external/api/update?token=${token}&${currentPin.toLowerCase()}=${val}`;
   fetch(url).then(() => {
@@ -231,7 +224,6 @@ function setPin(val) {
     resetTimer();
   }).catch(() => alert("Błąd"));
 }
-
 function downloadLogs() {
   if (!logs.length) return alert("Brak logów");
   const blob = new Blob([logs.join("\n")], {type:"text/plain"});
@@ -241,14 +233,12 @@ function downloadLogs() {
   a.click();
   resetTimer();
 }
-
 document.getElementById("tokenSelect").addEventListener("change", e => {
   document.getElementById("customToken").style.display = e.target.value==="własny"?"block":"none";
   resetTimer();
 });
-
-// opcjonalny monitoring wszystkich pinów
-const monitoredPins = ["V3","V4","V5","V6","V7","V8"];
+// opcjonalny monitoring wszystkich pinów (teraz V0-V20)
+const monitoredPins = ["V0","V1","V2","V3","V4","V5","V6","V7","V8","V9","V10","V11","V12","V13","V14","V15","V16","V17","V18","V19","V20"];
 let prev = {};
 setInterval(() => {
   if (!token) return;
