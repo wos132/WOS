@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Generator QR z podpisem</title>
+<title>QR-Maker</title>
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <style>
   body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
@@ -13,12 +13,12 @@
 </head>
 <body>
 
-<h2>Generator QR kodu z własnym podpisem</h2>
-<input type="text" id="qr-input" placeholder="Wpisz tekst do QR">
+<h2>QR-Maker</h2>
+<input type="text" id="qr-input" placeholder="Wpisz tekst zawarty w QR">
 <br>
-<input type="text" id="label-input" placeholder="Wpisz tekst pod QR">
+<input type="text" id="label-input" placeholder="Wpisze ektykiete QR">
 <br>
-<button id="download-btn">Pobierz QR jako PNG</button>
+<button id="download-btn">Pobierz kod QR</button>
 <br>
 <canvas id="qrcode"></canvas>
 
