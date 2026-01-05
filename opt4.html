@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Generator QR z podpisem</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+  input { padding: 10px; width: 300px; margin: 5px 0; }
+  button { padding: 10px 20px; margin-top: 10px; }
+  canvas { margin-top: 20px; border: 1px solid #ccc; }
+</style>
+</head>
+<body>
+
+<h2>Generator QR kodu z własnym podpisem</h2>
+<input type="text" id="qr-input" placeholder="Wpisz tekst do QR">
+<br>
+<input type="text" id="label-input" placeholder="Wpisz tekst pod QR">
+<br>
+<button id="download-btn">Pobierz QR jako PNG</button>
+<br>
+<canvas id="qrcode"></canvas>
+
+<script>
+const qrInput = document.getElementById('qr-input');
+const labelInput = document.getElementById('label-input');
+const canvas = document.getElementById('qrcode');
+const downloadBtn = document.getElementById('download-btn');
+const ctx = canvas.getContext('2d');
+
+function generateQR() {
+    const qrText = qrInput.value;
+    const labelText = labelInput.value;
+
+    if (!qrText && !labelText) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
+    }
+
+    const tempCanvas = document.createElement('canvas');
+    QRCode.toCanvas(tempCanvas, qrText || ' ', { width: 200 }, function (error) {
+        if (error) console.error(error);
+
+        canvas.width = tempCanvas.width;
+        canvas.height = tempCanvas.height + 30; // miejsce na podpis
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(tempCanvas, 0, 0);
+
+        if (labelText) {
+            ctx.font = '16px Arial';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.fillText(labelText, canvas.width / 2, canvas.height - 10);
+        }
+    });
+}
+
+// Generowanie QR i podpisu na bieżąco
+qrInput.addEventListener('input', generateQR);
+labelInput.addEventListener('input', generateQR);
+
+// Pobieranie QR jako PNG
+downloadBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'qrcode.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+});
+</script>
+
+</body>
+</html>
