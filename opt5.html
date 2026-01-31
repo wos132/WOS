@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generator kodu SGS</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0ff;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: #a5d6ff;
+      margin-bottom: 1.5em;
+    }
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      font-weight: 500;
+      color: #b0c4ff;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.1rem;
+      border: 1px solid #444;
+      border-radius: 8px;
+      background: #1a1a2e;
+      color: white;
+      font-family: monospace;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #6ab0ff;
+      box-shadow: 0 0 0 3px rgba(106,176,255,0.25);
+    }
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      font-size: 1.2rem;
+      background: #4dabf7;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #3298f2;
+    }
+    #result {
+      margin-top: 28px;
+      padding: 16px;
+      background: #1e1e38;
+      border-radius: 10px;
+      font-family: monospace;
+      font-size: 1.15rem;
+      word-break: break-all;
+      border: 1px solid #444;
+      position: relative;
+    }
+    #copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 6px 12px;
+      font-size: 0.9rem;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #copy-btn:hover {
+      background: #5a6268;
+    }
+    .small-note {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #8899aa;
+    }
+    .optional-note {
+      font-size: 0.9rem;
+      color: #8899aa;
+      margin-top: -4px;
+      margin-bottom: 12px;
+    }
+    .multi-section {
+      margin: 20px 0;
+      padding: 12px;
+      background: #1e1e38;
+      border-radius: 8px;
+      border: 1px solid #444;
+    }
+    .multi-section h3 {
+      margin: 0 0 12px 0;
+      color: #a5d6ff;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Generator kodu SGS</h1>
+
+  <label>Typ widżetu</label>
+  <select id="widgetType" onchange="toggleMultiSection()">
+    <option value="single">Pojedynczy widżet</option>
+    <option value="multi">Multi-widget (kilka przycisków/przełączników/wykresów)</option>
+  </select>
+
+  <div id="singleSection">
+    <label>Token Blynk</label>
+    <input type="text" id="token" placeholder="np. zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs" value="zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs">
+
+    <label>Pin wirtualny</label>
+    <select id="pin">
+      <option value="V0">V0</option>
+      <option value="V1">V1</option>
+      <option value="V2">V2</option>
+      <option value="V3" selected>V3</option>
+      <option value="V4">V4</option>
+      <option value="V5">V5</option>
+      <option value="V6">V6</option>
+      <option value="V7">V7</option>
+      <option value="V8">V8</option>
+      <option value="V9">V9</option>
+      <option value="V10">V10</option>
+    </select>
+
+    <label>Tryb / Typ widżetu</label>
+    <select id="mode">
+      <option value="display">display (wyświetlacz)</option>
+      <option value="switch">switch (przełącznik)</option>
+      <option value="button" selected>button (przycisk)</option>
+      <option value="chart">chart (wykres)</option>
+    </select>
+
+    <label>Etykieta / nazwa widżetu (opcjonalna)</label>
+    <input type="text" id="label" placeholder="np. Brama, Oświetlenie, Temperatura">
+    <div class="optional-note">Jeśli zostawisz puste, etykieta nie będzie dodana</div>
+  </div>
+
+  <!-- Sekcja multi-widget -->
+  <div id="multiSection" style="display:none;">
+    <div class="multi-section">
+      <h3>Element 1</h3>
+      <label>Token</label>
+      <input type="text" id="m_token1" placeholder="Token 1" value="zAM3zOp4JCYabvYGvtKIz9Gv0My3OIYs">
+
+      <label>Pin (V0–V10)</label>
+      <select id="m_pin1">
+        <option value="V0">V0</option>
+        <option value="V1">V1</option>
+        <option value="V2">V2</option>
+        <option value="V3" selected>V3</option>
+        <option value="V4">V4</option>
+        <option value="V5">V5</option>
+        <option value="V6">V6</option>
+        <option value="V7">V7</option>
+        <option value="V8">V8</option>
+        <option value="V9">V9</option>
+        <option value="V10">V10</option>
+      </select>
+
+      <label>Typ widżetu</label>
+      <select id="m_mode1">
+        <option value="button" selected>button (przycisk)</option>
+        <option value="switch">switch (przełącznik)</option>
+        <option value="display">display (wyświetlacz)</option>
+        <option value="chart">chart (wykres)</option>
+      </select>
+
+      <label>Etykieta</label>
+      <input type="text" id="m_label1" placeholder="np. Otwórz bramę">
+    </div>
+
+    <div class="multi-section">
+      <h3>Element 2</h3>
+      <label>Token</label>
+      <input type="text" id="m_token2" placeholder="Token 2 (opcjonalny)">
+
+      <label>Pin (V0–V10)</label>
+      <select id="m_pin2">
+        <option value="">Brak</option>
+        <option value="V0">V0</option>
+        <option value="V1">V1</option>
+        <option value="V2">V2</option>
+        <option value="V3">V3</option>
+        <option value="V4">V4</option>
+        <option value="V5">V5</option>
+        <option value="V6">V6</option>
+        <option value="V7">V7</option>
+        <option value="V8">V8</option>
+        <option value="V9">V9</option>
+        <option value="V10">V10</option>
+      </select>
+
+      <label>Typ widżetu</label>
+      <select id="m_mode2">
+        <option value="button">button (przycisk)</option>
+        <option value="switch">switch (przełącznik)</option>
+        <option value="display">display (wyświetlacz)</option>
+        <option value="chart">chart (wykres)</option>
+      </select>
+
+      <label>Etykieta</label>
+      <input type="text" id="m_label2" placeholder="np. Zamknij bramę">
+    </div>
+
+    <!-- Element 3 i 4 – identyczna struktura, możesz dodać więcej jeśli chcesz -->
+    <div class="multi-section">
+      <h3>Element 3 (opcjonalny)</h3>
+      <label>Token</label>
+      <input type="text" id="m_token3" placeholder="Token 3 (opcjonalny)">
+
+      <label>Pin</label>
+      <select id="m_pin3">
+        <option value="">Brak</option>
+        <option value="V0">V0</option>
+        <!-- ... V1 do V10 ... -->
+      </select>
+
+      <label>Typ widżetu</label>
+      <select id="m_mode3">
+        <option value="button">button</option>
+        <option value="switch">switch</option>
+        <option value="display">display</option>
+        <option value="chart">chart</option>
+      </select>
+
+      <label>Etykieta</label>
+      <input type="text" id="m_label3" placeholder="np. Stop">
+    </div>
+
+    <div class="multi-section">
+      <h3>Element 4 (opcjonalny)</h3>
+      <label>Token</label>
+      <input type="text" id="m_token4" placeholder="Token 4 (opcjonalny)">
+
+      <label>Pin</label>
+      <select id="m_pin4">
+        <option value="">Brak</option>
+        <option value="V0">V0</option>
+        <!-- ... -->
+      </select>
+
+      <label>Typ widżetu</label>
+      <select id="m_mode4">
+        <option value="button">button</option>
+        <option value="switch">switch</option>
+        <option value="display">display</option>
+        <option value="chart">chart</option>
+      </select>
+
+      <label>Etykieta</label>
+      <input type="text" id="m_label4" placeholder="np. Reset">
+    </div>
+  </div>
+
+  <button onclick="generate()">Wygeneruj kod</button>
+
+  <div id="result" style="display:none;">
+    <button id="copy-btn" onclick="copyToClipboard()">Kopiuj</button>
+    <div id="code-text"></div>
+  </div>
+
+  <div class="small-note">
+    Skanuj wygenerowany kod w aplikacji My SGS
+  </div>
+</div>
+
+<script>
+  function toggleMultiSection() {
+    const type = document.getElementById('widgetType').value;
+    document.getElementById('singleSection').style.display = type === 'single' ? 'block' : 'none';
+    document.getElementById('multiSection').style.display = type === 'multi' ? 'block' : 'none';
+  }
+
+  function generate() {
+    const type = document.getElementById('widgetType').value;
+
+    if (type === 'single') {
+      generateSingle();
+    } else {
+      generateMulti();
+    }
+  }
+
+  function generateSingle() {
+    const token = document.getElementById('token').value.trim();
+    const pin   = document.getElementById('pin').value.trim();
+    const mode  = document.getElementById('mode').value;
+    const label = document.getElementById('label').value.trim();
+
+    if (!token || !pin || !mode) {
+      alert("Wypełnij token, pin i wybierz tryb!");
+      return;
+    }
+
+    let code = `T(${token})TP(${pin})PM(${mode})M`;
+
+    if (label) {
+      code += `O(${label})M`;
+    }
+
+    document.getElementById('code-text').textContent = code;
+    document.getElementById('result').style.display = 'block';
+  }
+
+  function generateMulti() {
+    const parts = [];
+
+    for (let i = 1; i <= 4; i++) {
+      const token = document.getElementById(`m_token${i}`).value.trim();
+      const pin   = document.getElementById(`m_pin${i}`).value.trim();
+      const mode  = document.getElementById(`m_mode${i}`).value;
+      const label = document.getElementById(`m_label${i}`).value.trim();
+
+      if (token && pin && mode) {
+        let part = `T(${token})TP(${pin})PM(${mode})M`;
+        if (label) part += `O(${label})M`;
+        parts.push(part);
+      }
+    }
+
+    if (parts.length === 0) {
+      alert("Dodaj przynajmniej jeden element z tokenem, pinem i typem!");
+      return;
+    }
+
+    const code = parts.join('+');
+    document.getElementById('code-text').textContent = code;
+    document.getElementById('result').style.display = 'block';
+  }
+
+  function copyToClipboard() {
+    const text = document.getElementById('code-text').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = 'Skopiowano!';
+      setTimeout(() => btn.textContent = orig, 1800);
+    }).catch(() => {
+      alert('Nie udało się skopiować – zaznacz tekst ręcznie');
+    });
+  }
+
+  // Inicjalizacja
+  toggleMultiSection();
+</script>
+
+</body>
+</html>
