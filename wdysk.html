@@ -25,6 +25,7 @@
 
     .container {
       max-width: 90vw;
+      max-height: 80vh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -51,6 +52,7 @@
       cursor: pointer;
     }
 
+    /* Fullscreen styles */
     #image-wrapper:fullscreen,
     #image-wrapper:-webkit-full-screen {
       width: 100%;
@@ -68,6 +70,15 @@
     #image-wrapper:-webkit-full-screen #main-image {
       max-width: 100%;
       max-height: 100%;
+      width: auto;
+      height: auto;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     button {
@@ -77,9 +88,9 @@
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
       background: #3b82f6;
       color: #fff;
-      transition: background 0.2s, transform 0.1s;
     }
 
     button:hover {
@@ -90,9 +101,20 @@
       transform: scale(0.97);
     }
 
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .hint {
       font-size: 14px;
       color: #888;
+      text-align: center;
+    }
+
+    .error {
+      color: #f87171;
+      padding: 20px;
       text-align: center;
     }
   </style>
@@ -100,18 +122,25 @@
 <body>
   <div class="container">
     <div id="image-wrapper">
-      <img id="main-image" src="Historia.png" alt="Historia">
+      <img id="main-image" src="Historia.png" alt="Historia" onerror="showError()">
     </div>
 
-    <button id="fullscreen-btn" onclick="toggleFullscreen()">Pełny ekran</button>
+    <div class="controls">
+      <button id="fullscreen-btn" onclick="toggleFullscreen()">Pełny ekran</button>
+    </div>
 
-    <p class="hint">Kliknij zdjęcie lub przycisk → pełny ekran<br>Esc → wyjście</p>
+    <p class="hint">Kliknij obrazek lub przycisk, aby włączyć/wyłączyć pełny ekran.<br>Esc — wyjście z pełnego ekranu.</p>
   </div>
 
   <script>
     const wrapper = document.getElementById('image-wrapper');
     const btn = document.getElementById('fullscreen-btn');
     const img = document.getElementById('main-image');
+
+    function showError() {
+      wrapper.innerHTML = '<p class="error">Nie znaleziono pliku <strong>Historia.png</strong>.<br>Umieść obrazek w tym samym folderze co index.html.</p>';
+      btn.disabled = true;
+    }
 
     function isFullscreen() {
       return !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -137,12 +166,15 @@
           }
         }
       } catch (err) {
-        console.error(err);
+        console.error('Fullscreen error:', err);
       }
       updateButton();
     }
 
+    // Kliknięcie w obrazek też przełącza fullscreen
     img.addEventListener('click', toggleFullscreen);
+
+    // Aktualizacja przycisku przy zmianie stanu fullscreen
     document.addEventListener('fullscreenchange', updateButton);
     document.addEventListener('webkitfullscreenchange', updateButton);
   </script>
