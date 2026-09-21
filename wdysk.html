@@ -11,10 +11,13 @@
       box-sizing: border-box;
     }
 
+    html, body {
+      height: 100%;
+    }
+
     body {
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       background: #1a1a1a;
@@ -24,16 +27,19 @@
     }
 
     .container {
-      max-width: 90vw;
-      max-height: 80vh;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 20px;
+      width: 100%;
+      max-width: 90vw;
     }
 
     #image-wrapper {
-      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       max-width: 100%;
       max-height: 70vh;
       border-radius: 8px;
@@ -52,7 +58,7 @@
       cursor: pointer;
     }
 
-    /* Fullscreen styles */
+    /* Fullscreen */
     #image-wrapper:fullscreen,
     #image-wrapper:-webkit-full-screen {
       width: 100%;
@@ -76,8 +82,6 @@
 
     .controls {
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
       justify-content: center;
     }
 
@@ -171,10 +175,7 @@
       updateButton();
     }
 
-    // Kliknięcie w obrazek też przełącza fullscreen
     img.addEventListener('click', toggleFullscreen);
-
-    // Aktualizacja przycisku przy zmianie stanu fullscreen
     document.addEventListener('fullscreenchange', updateButton);
     document.addEventListener('webkitfullscreenchange', updateButton);
   </script>
