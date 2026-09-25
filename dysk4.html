@@ -1,4 +1,4 @@
-oo<!DOCTYPE html><html lang="pl">
+<!DOCTYPE html><html lang="pl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,7 +34,6 @@ body {
 }
 
 #image-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,31 +53,6 @@ body {
   height: auto;
   object-fit: contain;
   cursor: pointer;
-}
-
-/* Kod QR */
-.qr-code {
-  position: absolute;
-  right: 15px;
-  bottom: 15px;
-  width: 70px;
-  height: 70px;
-  padding: 6px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-  z-index: 10;
-  transition: transform 0.2s ease;
-}
-
-.qr-code:hover {
-  transform: scale(1.05);
-}
-
-.qr-code img {
-  display: block;
-  width: 100%;
-  height: 100%;
 }
 
 /* Fullscreen */
@@ -101,14 +75,6 @@ body {
   max-height: 100%;
   width: auto;
   height: auto;
-}
-
-#image-wrapper:fullscreen .qr-code,
-#image-wrapper:-webkit-full-screen .qr-code {
-  width: 140px;
-  height: 140px;
-  right: 25px;
-  bottom: 25px;
 }
 
 .controls {
@@ -153,32 +119,40 @@ button:disabled {
   text-align: center;
 }
 
+/* Kod QR - prawy dolny róg strony */
+.qr-code {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 110px;
+  height: 110px;
+  padding: 6px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  transition: transform 0.2s ease;
+}
+
+.qr-code:hover {
+  transform: scale(1.05);
+}
+
+.qr-code img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
   </style>
 </head>
-<body>
-  <div class="container">
-    <div id="image-wrapper">  <img
+<body>  <div class="container"><div id="image-wrapper">
+  <img
     id="main-image"
     src="Historia.jpg"
     alt="Historia"
     onerror="showError()"
   >
-
-  <!-- Kod QR do filmu YouTube -->
-  <a
-    class="qr-code"
-    href="https://youtu.be/dQw4w9WgXcQ?is=zAOKTBIPcqWYPGBI"
-    target="_blank"
-    rel="noopener noreferrer"
-    title="Otwórz film na YouTube"
-    onclick="event.stopPropagation()"
-  >
-    <img
-      src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fyoutu.be%2FdQw4w9WgXcQ%3Fis%3DzAOKTBIPcqWYPGBI"
-      alt="Kod QR do filmu YouTube"
-    >
-  </a>
-
 </div>
 
 <div class="controls">
@@ -191,7 +165,21 @@ button:disabled {
   Wersja: 1.0<br>
 </p>
 
-  </div>  <script>
+  </div>  <!-- Kod QR w prawym dolnym rogu strony --><a
+class="qr-code"
+href="https://youtu.be/dQw4w9WgXcQ?is=zAOKTBIPcqWYPGBI"
+target="_blank"
+rel="noopener noreferrer"
+title="Otwórz film na YouTube"
+
+«»
+
+<img
+  src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https%3A%2F%2Fyoutu.be%2FdQw4w9WgXcQ%3Fis%3DzAOKTBIPcqWYPGBI"
+  alt="Kod QR"
+>
+
+  </a>  <script>
     const wrapper = document.getElementById('image-wrapper');
     const btn = document.getElementById('fullscreen-btn');
     const img = document.getElementById('main-image');
