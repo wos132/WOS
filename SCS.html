@@ -18,8 +18,8 @@ input[type=file]{display:none}
 .tabs{display:flex;gap:8px;margin-bottom:14px}
 .tabs button{flex:1}
 .tabs .on{background:#1f6feb}
-#qrbox{background:white;width:min(82vw,480px);aspect-ratio:1;margin:16px auto;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#qrbox canvas,#qrbox img{max-width:100%;max-height:100%}
+#qrbox{background:white;width:min(82vw,420px);aspect-ratio:1;margin:16px auto;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#qrbox canvas,#qrbox img,#qrbox svg{max-width:100%;max-height:100%}
 .center{text-align:center}
 .big{font-size:42px;font-weight:800}
 progress{width:100%;height:14px}
@@ -73,99 +73,224 @@ small{color:#8b949e}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
-const $=id=>document.getElementById(id);
-let mode='send', file=null, chunks=[], sending=false, timer=null;
-let recv={id:null,total:0,name:'file',type:'application/octet-stream',size:0,parts:new Map(),last:0};
-let stream=null, raf=null;
+const $ = id => document.getElementById(id);
 
-function showMode(m){
-  mode=m;$('send').hidden=m!=='send';$('recv').hidden=m!=='recv';
-  $('sendTab').classList.toggle('on',m==='send');$('recvTab').classList.toggle('on',m==='recv');
-  if(m==='recv' && !stream) $('recvInfo').textContent='Kliknij „Uruchom kamerę”.';
+const CHUNK = 220;        // mniejsze kawałki = łatwiejsze QR-y
+const FRAME_MS = 320;     // wolniejsza zmiana = kamera ma czas
+
+let mode = 'send', file = null, chunks = [], sending = false, timer = null;
+let transferId = null;
+let recv = { id: null, total: 0, name: 'file', type: 'application/octet-stream', size: 0, parts: new Map() };
+let stream = null, raf = null;
+
+function showMode(m) {
+  mode = m;
+  $('send').hidden = m !== 'send';
+  $('recv').hidden = m !== 'recv';
+  $('sendTab').classList.toggle('on', m === 'send');
+  $('recvTab').classList.toggle('on', m === 'recv');
+  if (m === 'recv' && !stream) $('recvInfo').textContent = 'Kliknij „Uruchom kamerę”.';
 }
-$('file').onchange=async e=>{
-  file=e.target.files[0]; if(!file)return;
-  const CHUNK=700; // celowo mało: QR ma być łatwy do odczytu z telefonu
-  const buf=new Uint8Array(await file.arrayBuffer());
-  chunks=[]; for(let i=0;i<buf.length;i+=CHUNK) chunks.push(buf.slice(i,i+CHUNK));
-  $('sendInfo').innerHTML=`<b>${esc(file.name)}</b><br>${fmt(file.size)} · ${chunks.length} QR-ów`;
-  $('start').disabled=false;
+
+$('file').onchange = async e => {
+  file = e.target.files[0];
+  if (!file) return;
+  const buf = new Uint8Array(await file.arrayBuffer());
+  chunks = [];
+  for (let i = 0; i < buf.length; i += CHUNK) {
+    chunks.push(buf.slice(i, i + CHUNK));
+  }
+  $('sendInfo').innerHTML = `<b>${esc(file.name)}</b><br>${fmt(file.size)} · ${chunks.length} QR-ów`;
+  $('start').disabled = false;
+  $('sendPct').textContent = '0%';
+  $('sendProgress').value = 0;
+  $('qrbox').innerHTML = '<span style="color:#222">QR pojawi się tutaj</span>';
 };
-$('start').onclick=()=>{ if(!file||sending)return; sending=true;$('start').disabled=true;$('stop').disabled=false; showFrame(0); };
-$('stop').onclick=stopSend;
-function stopSend(){sending=false;clearTimeout(timer);$('start').disabled=!file;$('stop').disabled=true}
-function showFrame(i){
-  if(!sending)return;
-  const payload={
-    v:1,id:crypto.randomUUID(), // overwritten below for stable transfer id
+
+$('start').onclick = () => {
+  if (!file || sending) return;
+  sending = true;
+  transferId = Math.random().toString(36).slice(2, 10);
+  $('start').disabled = true;
+  $('stop').disabled = false;
+  showFrame(0);
+};
+
+$('stop').onclick = stopSend;
+
+function stopSend() {
+  sending = false;
+  clearTimeout(timer);
+  $('start').disabled = !file;
+  $('stop').disabled = true;
+}
+
+function showFrame(i) {
+  if (!sending) return;
+
+  const data = makePacket(transferId, i, chunks.length, file.name, file.type, file.size, chunks[i]);
+  const qr = qrcode(0, 'M');
+  qr.addData(data);
+  qr.make();
+  // cell size 5 + margin 4 = dobry quiet zone
+  $('qrbox').innerHTML = qr.createSvgTag(5, 4);
+
+  const p = (i + 1) / chunks.length;
+  $('sendProgress').value = p;
+  $('sendPct').textContent = Math.round(p * 100) + '%';
+
+  timer = setTimeout(() => {
+    if (i + 1 < chunks.length) {
+      showFrame(i + 1);
+    } else {
+      sending = false;
+      $('stop').disabled = true;
+      $('start').disabled = false;
+      $('sendInfo').innerHTML += ' · <b>Gotowe – odtwarzanie zakończone</b>';
+    }
+  }, FRAME_MS);
+}
+
+function makePacket(id, n, total, name, type, size, bytes) {
+  let s = '';
+  for (const b of bytes) s += String.fromCharCode(b);
+  return 'QFB1|' + id + '|' + n + '|' + total + '|' +
+    btoa(unescape(encodeURIComponent(name))) + '|' +
+    (type || 'application/octet-stream') + '|' + size + '|' + btoa(s);
+}
+
+function parsePacket(s) {
+  if (!s.startsWith('QFB1|')) return null;
+  const a = s.split('|');
+  if (a.length !== 8) return null;
+  let name;
+  try {
+    name = decodeURIComponent(escape(atob(a[4])));
+  } catch {
+    return null;
+  }
+  let bytes;
+  try {
+    const bin = atob(a[7]);
+    bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  } catch {
+    return null;
+  }
+  return {
+    id: a[1],
+    n: +a[2],
+    total: +a[3],
+    name,
+    type: a[5],
+    size: +a[6],
+    bytes
   };
-  if(i===0) window.transferId=Math.random().toString(36).slice(2,10);
-  const data=makePacket(window.transferId,i,chunks.length,file.name,file.type,file.size,chunks[i]);
-  const qr=qrcode(0,'M'); qr.addData(data); qr.make();
-  $('qrbox').innerHTML=qr.createSvgTag(8,0);
-  const p=(i+1)/chunks.length;
-  $('sendProgress').value=p;$('sendPct').textContent=Math.round(p*100)+'%';
-  timer=setTimeout(()=> {
-    if(i+1<chunks.length) showFrame(i+1);
-    else {sending=false;$('stop').disabled=true;$('sendInfo').innerHTML+=' · <b>Gotowe</b>'; }
-  }, 115);
 }
-function makePacket(id,n,total,name,type,size,bytes){
-  // JSON + base64. 700 B payload leaves comfortable room for camera decoding.
-  let s=''; for(const b of bytes)s+=String.fromCharCode(b);
-  return 'QFB1|'+id+'|'+n+'|'+total+'|'+btoa(unescape(encodeURIComponent(name)))+'|'+(type||'application/octet-stream')+'|'+size+'|'+btoa(s);
-}
-function parsePacket(s){
-  if(!s.startsWith('QFB1|'))return null;
-  const a=s.split('|'); if(a.length!==8)return null;
-  let name;try{name=decodeURIComponent(escape(atob(a[4])))}catch{return null}
-  let bytes;try{const bin=atob(a[7]);bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i)}catch{return null}
-  return {id:a[1],n:+a[2],total:+a[3],name,type:a[5],size:+a[6],bytes};
-}
-$('camera').onclick=async()=>{
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-    $('video').srcObject=stream; await $('video').play(); $('camera').textContent='Kamera działa';
+
+$('camera').onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+    $('video').srcObject = stream;
+    await $('video').play();
+    $('camera').textContent = 'Kamera działa';
+    $('recvInfo').textContent = 'Skanuję… skieruj kamerę na QR.';
     scan();
-  }catch(e){$('recvInfo').textContent='Nie udało się uruchomić kamery: '+e.message}
+  } catch (e) {
+    $('recvInfo').textContent = 'Nie udało się uruchomić kamery: ' + e.message;
+  }
 };
-const cv=document.createElement('canvas'),ctx=cv.getContext('2d',{willReadFrequently:true});
-function scan(){
-  if(!stream)return;
-  const v=$('video');
-  if(v.readyState>=2){
-    cv.width=v.videoWidth;cv.height=v.videoHeight;ctx.drawImage(v,0,0);
-    const img=ctx.getImageData(0,0,cv.width,cv.height);
-    const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
-    if(code&&code.data) accept(code.data);
+
+const cv = document.createElement('canvas');
+const ctx = cv.getContext('2d', { willReadFrequently: true });
+
+function scan() {
+  if (!stream) return;
+  const v = $('video');
+  if (v.readyState >= 2) {
+    cv.width = v.videoWidth;
+    cv.height = v.videoHeight;
+    ctx.drawImage(v, 0, 0);
+    const img = ctx.getImageData(0, 0, cv.width, cv.height);
+    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+    if (code && code.data) accept(code.data);
   }
-  raf=requestAnimationFrame(scan);
+  raf = requestAnimationFrame(scan);
 }
-function accept(s){
-  const p=parsePacket(s);if(!p)return;
-  if(recv.id!==p.id){
-    recv={id:p.id,total:p.total,name:p.name,type:p.type,size:p.size,parts:new Map(),last:Date.now()};
-    $('finish').disabled=true;
+
+function accept(s) {
+  const p = parsePacket(s);
+  if (!p) return;
+
+  if (recv.id !== p.id) {
+    recv = {
+      id: p.id,
+      total: p.total,
+      name: p.name,
+      type: p.type,
+      size: p.size,
+      parts: new Map()
+    };
+    $('finish').disabled = true;
   }
-  if(p.total!==recv.total)return;
-  if(!recv.parts.has(p.n))recv.parts.set(p.n,p.bytes);
-  const got=recv.parts.size, pct=got/recv.total;
-  $('recvProgress').value=pct;
-  $('recvInfo').innerHTML=`Odebrano <b>${got}/${recv.total}</b> fragmentów · ${Math.round(pct*100)}%<br><small>${esc(recv.name)}</small>`;
-  if(got===recv.total){
-    $('finish').disabled=false;
-    $('recvInfo').innerHTML=`<b>✓ Plik kompletny!</b> ${esc(recv.name)} · ${fmt(recv.size)}`;
+
+  if (p.total !== recv.total) return;
+  if (!recv.parts.has(p.n)) {
+    recv.parts.set(p.n, p.bytes);
+  }
+
+  const got = recv.parts.size;
+  const pct = got / recv.total;
+  $('recvProgress').value = pct;
+  $('recvInfo').innerHTML =
+    `Odebrano <b>${got}/${recv.total}</b> fragmentów · ${Math.round(pct * 100)}%<br>` +
+    `<small>${esc(recv.name)}</small>`;
+
+  if (got === recv.total) {
+    $('finish').disabled = false;
+    $('recvInfo').innerHTML =
+      `<b>✓ Plik kompletny!</b> ${esc(recv.name)} · ${fmt(recv.size)}`;
   }
 }
-$('finish').onclick=()=>{
-  if(recv.parts.size!==recv.total)return;
-  const blob=new Blob([...Array(recv.total).keys()].map(i=>recv.parts.get(i)),{type:recv.type});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=recv.name;a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+
+$('finish').onclick = () => {
+  if (recv.parts.size !== recv.total) return;
+  const parts = [];
+  for (let i = 0; i < recv.total; i++) {
+    parts.push(recv.parts.get(i));
+  }
+  const blob = new Blob(parts, { type: recv.type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = recv.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
 };
-function fmt(n){let u=['B','KB','MB','GB'],i=0;while(n>=1024&&i<3){n/=1024;i++}return n.toFixed(i?1:0)+' '+u[i]}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-window.addEventListener('beforeunload',()=>stream?.getTracks().forEach(t=>t.stop()));
+
+function fmt(n) {
+  const u = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (n >= 1024 && i < 3) { n /= 1024; i++; }
+  return n.toFixed(i ? 1 : 0) + ' ' + u[i];
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+}
+
+window.addEventListener('beforeunload', () => {
+  stream?.getTracks().forEach(t => t.stop());
+  if (raf) cancelAnimationFrame(raf);
+});
 </script>
 </body>
 </html>
