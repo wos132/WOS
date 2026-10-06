@@ -49,7 +49,7 @@ small{color:#8b949e}
 <div id="sendPct" class="big">0%</div>
 <progress id="sendProgress" value="0" max="1"></progress>
 <p><button id="start" disabled>▶ Start</button> <button id="stop" class="secondary" disabled>■ Stop</button></p>
-<small>Trzymaj oba urządzenia stabilnie. Odbiornik automatycznie wykrywa kolejne klatki.</small>
+<small>Trzymaj oba urządzenia stabilnie. Nadajnik kręci kody w pętli — odbiornik zbiera brakujące fragmenty.</small>
 </div>
 </section>
 
@@ -65,7 +65,7 @@ small{color:#8b949e}
 
 <div class="card">
 <strong>Jak to działa?</strong>
-<p>Plik jest dzielony na małe fragmenty. Każdy fragment trafia do osobnego QR-a. Nadajnik pokazuje je po kolei, a odbiornik zbiera fragmenty i składa z nich oryginalny plik.</p>
+<p>Plik jest dzielony na małe fragmenty. Każdy fragment trafia do osobnego QR-a. Nadajnik pokazuje je w pętli, a odbiornik zbiera brakujące fragmenty i składa z nich oryginalny plik.</p>
 <p><small>Wersja prototypowa: biblioteki QR są ładowane przy otwarciu strony. Sam transfer pliku nie używa internetu.</small></p>
 </div>
 </main>
@@ -123,6 +123,8 @@ function stopSend() {
   clearTimeout(timer);
   $('start').disabled = !file;
   $('stop').disabled = true;
+  $('sendPct').textContent = '0%';
+  $('sendProgress').value = 0;
 }
 
 function showFrame(i) {
@@ -139,15 +141,10 @@ function showFrame(i) {
   $('sendProgress').value = p;
   $('sendPct').textContent = Math.round(p * 100) + '%';
 
+  // pętla – po ostatnim wraca do początku
   timer = setTimeout(() => {
-    if (i + 1 < chunks.length) {
-      showFrame(i + 1);
-    } else {
-      sending = false;
-      $('stop').disabled = true;
-      $('start').disabled = false;
-      $('sendInfo').innerHTML += ' · <b>Gotowe – odtwarzanie zakończone</b>';
-    }
+    const next = (i + 1) % chunks.length;
+    showFrame(next);
   }, FRAME_MS);
 }
 
