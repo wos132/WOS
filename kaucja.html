@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kaucja – kody zwrotu</title>
+<meta name="theme-color" content="#13a05a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
@@ -48,7 +51,11 @@ button.big{width:100%;margin-top:14px;padding:15px;font-size:17px}
 .big-amt{font-size:44px;font-weight:800;text-align:center;letter-spacing:-1.5px}
 .hint{text-align:center;color:var(--mut);font-size:14px}
 .sp{flex:1}
-video{width:100%;border-radius:18px;background:#000;max-height:60vh;object-fit:cover}
+video{width:100%;display:block;background:#000;max-height:58vh;object-fit:cover}
+.vf{position:relative;border-radius:18px;overflow:hidden}
+.vf i{position:absolute;left:6%;right:6%;top:30%;bottom:30%;border:3px solid #2bc47a;border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.vf i:after{content:"";position:absolute;left:4%;right:4%;top:50%;height:2px;background:#ff4d4d;opacity:.8}
+.tools{display:flex;gap:10px;align-items:center;margin-top:10px}.tools input{flex:1;padding:0;border:0;background:none}.tools button{padding:11px 14px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#222;color:#fff;border-radius:14px;padding:12px 16px;display:none;gap:14px;align-items:center;z-index:40;box-shadow:0 6px 24px rgba(0,0,0,.35)}
 .toast.on{display:flex}
 .toast button{background:none;color:#6be3a4;padding:0}
@@ -56,7 +63,7 @@ video{width:100%;border-radius:18px;background:#000;max-height:60vh;object-fit:c
 </head>
 <body>
 <div class="wrap">
-  <header><div><h1>Kaucja</h1><div class="sub">Twoje kody zwrotu z paragonów</div></div></header>
+  <header><div><h1>Kaucja</h1><div class="sub">Twoje kody zwrotu z paragonów</div></div><button id="inst" style="display:none;padding:9px 14px" type="button">Zainstaluj</button></header>
   <div class="total"><small>Do odzyskania</small><b id="sum">0,00 zł</b><span id="cnt" style="opacity:.85;font-size:14px"></span></div>
 
   <div class="card">
@@ -66,6 +73,8 @@ video{width:100%;border-radius:18px;background:#000;max-height:60vh;object-fit:c
       <input id="code" inputmode="text" autocomplete="off" placeholder="Wpisz lub zeskanuj">
       <button class="fix sec" id="scanBtn" type="button">📷 Skanuj</button>
     </div>
+    <button class="sec" id="photoBtn" type="button" style="width:100%;margin-top:8px">🖼️ Zrób zdjęcie kodu (gdy skaner nie łapie)</button>
+    <input id="photo" type="file" accept="image/*" capture="environment" style="display:none">
     <label for="amount">Kwota (zł)</label>
     <input id="amount" inputmode="decimal" placeholder="np. 3,50">
     <label for="note">Sklep / notatka (opcjonalnie)</label>
@@ -88,8 +97,9 @@ video{width:100%;border-radius:18px;background:#000;max-height:60vh;object-fit:c
 
 <div class="ov" id="scanOv">
   <h1 style="margin-bottom:12px">Skanuj kod kreskowy</h1>
-  <video id="vid" playsinline muted></video>
+  <div class="vf"><video id="vid" playsinline muted></video><i></i></div>
   <p class="hint" id="scanMsg">Skieruj aparat na kod kreskowy</p>
+  <div class="tools"><button class="sec" id="torch" type="button" style="display:none">🔦 Latarka</button><input type="range" id="zoom" style="display:none" aria-label="Zoom"><button class="sec" id="photoBtn2" type="button">🖼️ Zdjęcie</button></div>
   <div class="sp"></div>
   <button class="big sec" id="scanClose">Anuluj</button>
 </div>
@@ -152,42 +162,92 @@ function closeView(){$('viewOv').classList.remove('on');curId=null;if(wl){try{wl
 $('vClose').onclick=closeView;
 $('vUsed').onclick=function(){var id=curId;closeView();remove(id)};
 /* skaner */
-var stream=null,timer=null,reader=null,running=false;
+var stream=null,raf=null,running=false,track=null,det=null,zx=null,last=0,busy=false,mode=0,torchOn=false;
+var cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
 var MAP={code_128:'CODE128',ean_13:'EAN13',ean_8:'EAN8',code_39:'CODE39',itf:'ITF',upc_a:'UPC',upc_e:'UPC',codabar:'codabar'};
-function found(text,f){
-  if(!running)return;
+function initDec(){
+  if(!det&&'BarcodeDetector' in window){try{det=new BarcodeDetector()}catch(e){}}
+  if(!zx&&window.ZXing){
+    var h=new Map(),F=ZXing.BarcodeFormat;
+    h.set(ZXing.DecodeHintType.TRY_HARDER,true);
+    h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[F.CODE_128,F.EAN_13,F.EAN_8,F.CODE_39,F.ITF,F.UPC_A,F.UPC_E,F.CODABAR]);
+    zx=new ZXing.MultiFormatReader();zx.setHints(h);
+  }
+}
+async function decodeCanvas(c){
+  if(det){try{var r=await det.detect(c);r=r.filter(function(x){return x.format!=='qr_code'});if(r.length)return{t:r[0].rawValue,f:r[0].format}}catch(e){}}
+  if(zx){try{var b=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(c)));var x=zx.decode(b);return{t:x.getText(),f:ZXing.BarcodeFormat[x.getBarcodeFormat()]}}catch(e){}}
+  return null;
+}
+function apply(t,f){
   fmt=MAP[String(f||'').toLowerCase()]||'CODE128';
-  $('code').value=text;stopScan();
-  if(navigator.vibrate)navigator.vibrate(60);
+  $('code').value=t;if(navigator.vibrate)navigator.vibrate(60);
   setTimeout(function(){$('amount').focus()},150);
 }
+function found(t,f){if(!running)return;stopScan();apply(t,f)}
 function stopScan(){
-  running=false;clearInterval(timer);
-  if(reader){try{reader.reset()}catch(e){}reader=null}
+  running=false;cancelAnimationFrame(raf);torchOn=false;
   if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
   $('vid').srcObject=null;$('scanOv').classList.remove('on');
 }
-$('scanClose').onclick=stopScan;
-$('scanBtn').onclick=function(){
-  $('scanOv').classList.add('on');$('scanMsg').textContent='Uruchamiam aparat…';running=true;
+function loop(ts){
+  if(!running)return;
+  raf=requestAnimationFrame(loop);
   var v=$('vid');
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){stopScan();return toast('Aparat niedostępny – wpisz kod ręcznie')}
-  if('BarcodeDetector' in window){
-    var det=new BarcodeDetector();
-    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(s){
-      stream=s;v.srcObject=s;v.play();$('scanMsg').textContent='Skieruj aparat na kod kreskowy';
-      timer=setInterval(function(){
-        if(v.readyState<2)return;
-        det.detect(v).then(function(r){if(r.length)found(r[0].rawValue,r[0].format)}).catch(function(){});
-      },200);
-    }).catch(function(){stopScan();toast('Brak zgody na aparat – wpisz kod ręcznie')});
-  }else if(window.ZXing){
-    reader=new ZXing.BrowserMultiFormatReader();
-    reader.decodeFromConstraints({video:{facingMode:'environment'}},v,function(r){
-      if(r){var n=ZXing.BarcodeFormat[r.getBarcodeFormat()];found(r.getText(),n)}
-    }).then(function(){$('scanMsg').textContent='Skieruj aparat na kod kreskowy'}).catch(function(){stopScan();toast('Brak zgody na aparat – wpisz kod ręcznie')});
-  }else{stopScan();toast('Skaner niedostępny – wpisz kod ręcznie')}
+  if(busy||ts-last<110||v.readyState<2||!v.videoWidth)return;
+  last=ts;busy=true;mode^=1;
+  var vw=v.videoWidth,vh=v.videoHeight,sx=0,sy=0,sw=vw,sh=vh;
+  if(mode){sh=Math.round(vh*.4);sy=Math.round((vh-sh)/2)}
+  var k=Math.min(1,1920/sw);cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
+  cx.drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
+  decodeCanvas(cv).then(function(r){busy=false;if(r)found(r.t,r.f)});
+}
+$('scanClose').onclick=stopScan;
+$('scanBtn').onclick=async function(){
+  initDec();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return toast('Aparat niedostępny – użyj „Zdjęcie kodu”');
+  $('scanOv').classList.add('on');$('scanMsg').textContent='Uruchamiam aparat…';running=true;
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}})}
+  catch(e){stopScan();return toast('Aparat zablokowany – użyj „Zdjęcie kodu”')}
+  var v=$('vid');v.srcObject=stream;try{await v.play()}catch(e){}
+  track=stream.getVideoTracks()[0];
+  var cap=track.getCapabilities?track.getCapabilities():{};
+  try{if(cap.focusMode&&cap.focusMode.indexOf('continuous')>-1)await track.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
+  $('torch').style.display=cap.torch?'':'none';
+  var z=$('zoom');
+  if(cap.zoom){z.min=cap.zoom.min;z.max=cap.zoom.max;z.step=cap.zoom.step||.1;z.value=cap.zoom.min;z.style.display=''}else z.style.display='none';
+  $('scanMsg').textContent='Trzymaj kod w ramce, 15–25 cm od aparatu';
+  raf=requestAnimationFrame(loop);
 };
+$('torch').onclick=function(){torchOn=!torchOn;try{track.applyConstraints({advanced:[{torch:torchOn}]})}catch(e){}};
+$('zoom').oninput=function(){try{track.applyConstraints({advanced:[{zoom:parseFloat(this.value)}]})}catch(e){}};
+$('photoBtn').onclick=function(){$('photo').click()};
+$('photoBtn2').onclick=function(){stopScan();$('photo').click()};
+$('photo').onchange=async function(){
+  var f=this.files[0];this.value='';if(!f)return;initDec();toast('Szukam kodu na zdjęciu…');
+  try{
+    var bm=await createImageBitmap(f),res=null,sizes=[1600,2400,1000];
+    for(var i=0;i<sizes.length&&!res;i++){
+      var k=Math.min(1,sizes[i]/Math.max(bm.width,bm.height));
+      cv.width=Math.round(bm.width*k);cv.height=Math.round(bm.height*k);
+      cx.drawImage(bm,0,0,cv.width,cv.height);res=await decodeCanvas(cv);
+    }
+    if(res){apply(res.t,res.f);toast('Kod rozpoznany ✓')}else toast('Nie wykryto kodu – zrób ostrzejsze zdjęcie samego kodu');
+  }catch(e){toast('Nie udało się odczytać zdjęcia')}
+};
+/* instalacja (PWA) */
+try{
+  var c=document.createElement('canvas');c.width=c.height=512;var g=c.getContext('2d');
+  g.fillStyle='#13a05a';g.fillRect(0,0,512,512);g.fillStyle='#fff';
+  [[120,24],[164,12],[192,36],[248,12],[276,24],[320,12],[348,24]].forEach(function(b){g.fillRect(b[0],150,b[1],212)});
+  var icon=c.toDataURL('image/png');
+  var m={name:'Kaucja – kody zwrotu',short_name:'Kaucja',start_url:location.href.split('#')[0],display:'standalone',background_color:'#f4f6f5',theme_color:'#13a05a',icons:[{src:icon,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+  var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));document.head.appendChild(l);
+  var a=document.createElement('link');a.rel='apple-touch-icon';a.href=icon;document.head.appendChild(a);
+}catch(e){}
+var dip=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dip=e;$('inst').style.display=''});
+$('inst').onclick=function(){if(dip){dip.prompt();dip=null;$('inst').style.display='none'}};
 render();
 })();
 </script>
