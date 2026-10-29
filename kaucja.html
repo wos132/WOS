@@ -46,8 +46,8 @@ button.big{width:100%;margin-top:14px;padding:15px;font-size:17px}
 .empty{text-align:center;color:var(--mut);padding:30px 10px}
 .ov{position:fixed;inset:0;background:var(--bg);z-index:20;display:none;flex-direction:column;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));overflow:auto}
 .ov.on{display:flex}
-.show{background:#fff;color:#000;border-radius:20px;padding:20px 10px;margin:10px 0 16px;text-align:center;box-shadow:var(--sh)}
-.show svg{width:100%;height:auto;max-height:260px}
+.show{background:#fff;color:#000;border-radius:20px;padding:20px 10px;margin:10px 0 16px;text-align:center;box-shadow:var(--sh);overflow:hidden}
+.show svg,.show img{width:100%;height:auto;max-height:280px;object-fit:contain;display:block;margin:0 auto}
 .big-amt{font-size:44px;font-weight:800;text-align:center;letter-spacing:-1.5px}
 .hint{text-align:center;color:var(--mut);font-size:14px}
 .sp{flex:1}
@@ -59,191 +59,269 @@ video{width:100%;display:block;background:#000;max-height:58vh;object-fit:cover}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#222;color:#fff;border-radius:14px;padding:12px 16px;display:none;gap:14px;align-items:center;z-index:40;box-shadow:0 6px 24px rgba(0,0,0,.35)}
 .toast.on{display:flex}
 .toast button{background:none;color:#6be3a4;padding:0}
+.preview-crop{max-width:100%;border-radius:12px;margin-top:10px;border:1.5px solid var(--bd);display:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header><div><h1>Kaucja</h1><div class="sub">Twoje kody zwrotu z paragonów</div></div><button id="inst" style="display:none;padding:9px 14px" type="button">Zainstaluj</button></header>
-  <div class="total"><small>Do odzyskania</small><b id="sum">0,00 zł</b><span id="cnt" style="opacity:.85;font-size:14px"></span></div>
+<header><div><h1>Kaucja</h1><div class="sub">Twoje kody zwrotu z paragonów</div></div><button id="inst" style="display:none;padding:9px 14px" type="button">Zainstaluj</button></header>
+<div class="total"><small>Do odzyskania</small><b id="sum">0,00 zł</b><span id="cnt" style="opacity:.85;font-size:14px"></span></div>
 
-  <div class="card">
-    <h2>Dodaj kod</h2>
-    <label for="code">Kod z paragonu</label>
-    <div class="row">
-      <input id="code" inputmode="text" autocomplete="off" placeholder="Wpisz lub zeskanuj">
-      <button class="fix sec" id="scanBtn" type="button">📷 Skanuj</button>
-    </div>
-    <button class="sec" id="photoBtn" type="button" style="width:100%;margin-top:8px">🖼️ Zrób zdjęcie kodu (gdy skaner nie łapie)</button>
-    <input id="photo" type="file" accept="image/*" capture="environment" style="display:none">
-    <label for="amount">Kwota (zł)</label>
-    <input id="amount" inputmode="decimal" placeholder="np. 3,50">
-    <label for="note">Sklep / notatka (opcjonalnie)</label>
-    <input id="note" placeholder="np. Biedronka">
-    <button class="big" id="save" type="button">Zapisz kod</button>
-  </div>
+<div class="card">
+<h2>Dodaj kod</h2>
+<label for="code">Kod z paragonu</label>
+<div class="row">
+<input id="code" inputmode="text" autocomplete="off" placeholder="Wpisz lub zeskanuj">
+<button class="fix sec" id="scanBtn" type="button">📷 Skanuj</button>
+</div>
+<button class="sec" id="photoBtn" type="button" style="width:100%;margin-top:8px">🖼️ Zrób zdjęcie kodu (wycina dokładnie)</button>
+<input id="photo" type="file" accept="image/*" capture="environment" style="display:none">
+<img id="cropPreview" class="preview-crop" alt="Wycinek kodu">
+<label for="amount">Kwota (zł)</label>
+<input id="amount" inputmode="decimal" placeholder="np. 3,50">
+<label for="note">Sklep / notatka (opcjonalnie)</label>
+<input id="note" placeholder="np. Biedronka">
+<button class="big" id="save" type="button">Zapisz kod</button>
+</div>
 
-  <div id="list"></div>
+<div id="list"></div>
 </div>
 
 <div class="ov" id="viewOv">
-  <div class="hint" id="vNote"></div>
-  <div class="show"><svg id="bc"></svg></div>
-  <div class="big-amt" id="vAmt"></div>
-  <div class="hint">Pokaż ten kod przy kasie lub w butelkomacie</div>
-  <div class="sp"></div>
-  <button class="big dan" id="vUsed">Wykorzystany – usuń</button>
-  <button class="big sec" id="vClose">Zamknij</button>
+<div class="hint" id="vNote"></div>
+<div class="show" id="showBox"><svg id="bc"></svg></div>
+<div class="big-amt" id="vAmt"></div>
+<div class="hint">Pokaż ten kod przy kasie lub w butelkomacie</div>
+<div class="sp"></div>
+<button class="big dan" id="vUsed">Wykorzystany – usuń</button>
+<button class="big sec" id="vClose">Zamknij</button>
 </div>
 
 <div class="ov" id="scanOv">
-  <h1 style="margin-bottom:12px">Skanuj kod kreskowy</h1>
-  <div class="vf"><video id="vid" playsinline muted></video><i></i></div>
-  <p class="hint" id="scanMsg">Skieruj aparat na kod kreskowy</p>
-  <div class="tools"><button class="sec" id="torch" type="button" style="display:none">🔦 Latarka</button><input type="range" id="zoom" style="display:none" aria-label="Zoom"><button class="sec" id="photoBtn2" type="button">🖼️ Zdjęcie</button></div>
-  <div class="sp"></div>
-  <button class="big sec" id="scanClose">Anuluj</button>
+<h1 style="margin-bottom:12px">Skanuj kod kreskowy</h1>
+<div class="vf"><video id="vid" playsinline muted></video><i></i></div>
+<p class="hint" id="scanMsg">Skieruj aparat na kod kreskowy</p>
+<div class="tools"><button class="sec" id="torch" type="button" style="display:none">🔦 Latarka</button><input type="range" id="zoom" style="display:none" aria-label="Zoom"><button class="sec" id="photoBtn2" type="button">🖼️ Zdjęcie</button></div>
+<div class="sp"></div>
+<button class="big sec" id="scanClose">Anuluj</button>
 </div>
 
 <div class="toast" id="toast"><span id="toastTx"></span><button id="undo">Cofnij</button></div>
 
 <script>
 (function(){
-var KEY='kaucja-v1',items=[],lastDel=null,toastT,fmt='CODE128',curId=null;
+var KEY='kaucja-v1',items=[],lastDel=null,toastT,fmt='CODE128',curId=null,pendingImg=null;
 try{items=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){items=[]}
 var $=function(i){return document.getElementById(i)};
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
 function money(n){return n.toLocaleString('pl-PL',{style:'currency',currency:'PLN'})}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function render(){
-  var t=items.reduce(function(a,i){return a+i.amount},0);
-  $('sum').textContent=money(t);
-  $('cnt').textContent=items.length?('Aktywne kody: '+items.length):'Brak zapisanych kodów';
-  var l=$('list');
-  if(!items.length){l.innerHTML='<div class="empty">Nic tu jeszcze nie ma.<br>Dodaj pierwszy kod powyżej.</div>';return}
-  l.innerHTML=items.map(function(i){
-    return '<div class="item" data-id="'+i.id+'"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></div><div class="mid"><div class="amt">'+money(i.amount)+'</div><div class="code">'+esc(i.note?i.note+' · ':'')+esc(i.code)+'</div></div><button class="del" data-del="'+i.id+'" aria-label="Usuń"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>';
-  }).join('');
+var t=items.reduce(function(a,i){return a+i.amount},0);
+$('sum').textContent=money(t);
+$('cnt').textContent=items.length?('Aktywne kody: '+items.length):'Brak zapisanych kodów';
+var l=$('list');
+if(!items.length){l.innerHTML='<div class="empty">Nic tu jeszcze nie ma.<br>Dodaj pierwszy kod powyżej.</div>';return}
+l.innerHTML=items.map(function(i){
+return '<div class="item" data-id="'+i.id+'"><div class="ico"><svg viewBox="0 0 24 24"><path d="M4 5v14M8 5v14M12 5v14M16 5v14M20 5v14"/></svg></div><div class="mid"><div class="amt">'+money(i.amount)+'</div><div class="code">'+esc(i.note?i.note+' · ':'')+esc(i.code)+(i.img?' · 📷':'')+'</div></div><button class="del" data-del="'+i.id+'" aria-label="Usuń"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div>';
+}).join('');
 }
 function toast(msg,undo){
-  $('toastTx').textContent=msg;$('undo').style.display=undo?'':'none';
-  $('toast').classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){$('toast').classList.remove('on')},5000);
+$('toastTx').textContent=msg;$('undo').style.display=undo?'':'none';
+$('toast').classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){$('toast').classList.remove('on')},5000);
 }
 function remove(id){
-  var ix=items.findIndex(function(i){return i.id===id});if(ix<0)return;
-  lastDel={item:items[ix],ix:ix};items.splice(ix,1);persist();render();toast('Kod usunięty',true);
+var ix=items.findIndex(function(i){return i.id===id});if(ix<0)return;
+lastDel={item:items[ix],ix:ix};items.splice(ix,1);persist();render();toast('Kod usunięty',true);
 }
 $('undo').onclick=function(){if(lastDel){items.splice(lastDel.ix,0,lastDel.item);lastDel=null;persist();render();$('toast').classList.remove('on')}};
 $('save').onclick=function(){
-  var code=$('code').value.trim(),a=parseFloat($('amount').value.replace(',','.').replace(/[^\d.]/g,''));
-  if(!code){$('code').focus();return toast('Wpisz lub zeskanuj kod')}
-  if(!(a>=0)||isNaN(a)){$('amount').focus();return toast('Podaj kwotę')}
-  items.unshift({id:Date.now().toString(36),code:code,fmt:fmt,amount:Math.round(a*100)/100,note:$('note').value.trim()});
-  persist();render();$('code').value='';$('amount').value='';$('note').value='';fmt='CODE128';toast('Zapisano ✓');
+var code=$('code').value.trim(),a=parseFloat($('amount').value.replace(',','.').replace(/[^\d.]/g,''));
+if(!code){$('code').focus();return toast('Wpisz lub zeskanuj kod')}
+if(!(a>=0)||isNaN(a)){$('amount').focus();return toast('Podaj kwotę')}
+var item={id:Date.now().toString(36),code:code,fmt:fmt,amount:Math.round(a*100)/100,note:$('note').value.trim()};
+if(pendingImg){item.img=pendingImg;pendingImg=null;$('cropPreview').style.display='none';$('cropPreview').src=''}
+items.unshift(item);
+persist();render();$('code').value='';$('amount').value='';$('note').value='';fmt='CODE128';toast('Zapisano ✓');
 };
 $('list').onclick=function(e){
-  var d=e.target.closest('[data-del]');
-  if(d){e.stopPropagation();return remove(d.dataset.del)}
-  var it=e.target.closest('.item');if(it)openView(it.dataset.id);
+var d=e.target.closest('[data-del]');
+if(d){e.stopPropagation();return remove(d.dataset.del)}
+var it=e.target.closest('.item');if(it)openView(it.dataset.id);
 };
 /* widok kodu */
 var wl=null;
 function openView(id){
-  var i=items.find(function(x){return x.id===id});if(!i)return;curId=id;
-  var s=$('bc');s.innerHTML='';s.removeAttribute('viewBox');
+var i=items.find(function(x){return x.id===id});if(!i)return;curId=id;
+var box=$('showBox');
+box.innerHTML='';
+if(i.img){
+  var im=document.createElement('img');
+  im.src=i.img;
+  im.alt='Zdjęcie kodu';
+  box.appendChild(im);
+}else{
+  var s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  s.id='bc';
+  box.appendChild(s);
   function draw(f){JsBarcode(s,i.code,{format:f,width:3,height:110,displayValue:true,fontSize:20,margin:8,background:'#ffffff'})}
   try{draw(i.fmt||'CODE128')}catch(e){try{draw('CODE128')}catch(e2){}}
   var w=s.getAttribute('width'),h=s.getAttribute('height');
   if(w&&h){s.setAttribute('viewBox','0 0 '+parseFloat(w)+' '+parseFloat(h));s.removeAttribute('width');s.removeAttribute('height')}
-  $('vAmt').textContent=money(i.amount);$('vNote').textContent=i.note||'';
-  $('viewOv').classList.add('on');
-  try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}catch(e){}
+}
+$('vAmt').textContent=money(i.amount);$('vNote').textContent=i.note||'';
+$('viewOv').classList.add('on');
+try{if(navigator.wakeLock)navigator.wakeLock.request('screen').then(function(l){wl=l}).catch(function(){})}catch(e){}
 }
 function closeView(){$('viewOv').classList.remove('on');curId=null;if(wl){try{wl.release()}catch(e){}wl=null}}
 $('vClose').onclick=closeView;
 $('vUsed').onclick=function(){var id=curId;closeView();remove(id)};
-/* skaner */
+/* skaner + detekcja */
 var stream=null,raf=null,running=false,track=null,det=null,zx=null,last=0,busy=false,mode=0,torchOn=false;
 var cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
 var MAP={code_128:'CODE128',ean_13:'EAN13',ean_8:'EAN8',code_39:'CODE39',itf:'ITF',upc_a:'UPC',upc_e:'UPC',codabar:'codabar'};
 function initDec(){
-  if(!det&&'BarcodeDetector' in window){try{det=new BarcodeDetector()}catch(e){}}
-  if(!zx&&window.ZXing){
-    var h=new Map(),F=ZXing.BarcodeFormat;
-    h.set(ZXing.DecodeHintType.TRY_HARDER,true);
-    h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[F.CODE_128,F.EAN_13,F.EAN_8,F.CODE_39,F.ITF,F.UPC_A,F.UPC_E,F.CODABAR]);
-    zx=new ZXing.MultiFormatReader();zx.setHints(h);
-  }
+if(!det&&'BarcodeDetector' in window){try{det=new BarcodeDetector()}catch(e){}}
+if(!zx&&window.ZXing){
+var h=new Map(),F=ZXing.BarcodeFormat;
+h.set(ZXing.DecodeHintType.TRY_HARDER,true);
+h.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[F.CODE_128,F.EAN_13,F.EAN_8,F.CODE_39,F.ITF,F.UPC_A,F.UPC_E,F.CODABAR]);
+zx=new ZXing.MultiFormatReader();zx.setHints(h);
+}
 }
 async function decodeCanvas(c){
-  if(det){try{var r=await det.detect(c);r=r.filter(function(x){return x.format!=='qr_code'});if(r.length)return{t:r[0].rawValue,f:r[0].format}}catch(e){}}
-  if(zx){try{var b=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(c)));var x=zx.decode(b);return{t:x.getText(),f:ZXing.BarcodeFormat[x.getBarcodeFormat()]}}catch(e){}}
-  return null;
+if(det){try{
+  var r=await det.detect(c);
+  r=r.filter(function(x){return x.format!=='qr_code'});
+  if(r.length){
+    var b=r[0];
+    return {t:b.rawValue,f:b.format,box:b.boundingBox,corners:b.cornerPoints};
+  }
+}catch(e){}}
+if(zx){try{
+  var b=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(c)));
+  var x=zx.decode(b);
+  var pts=x.getResultPoints();
+  var box=null;
+  if(pts&&pts.length){
+    var minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(var i=0;i<pts.length;i++){
+      if(!pts[i])continue;
+      var px=pts[i].getX(),py=pts[i].getY();
+      if(px<minX)minX=px;if(py<minY)minY=py;if(px>maxX)maxX=px;if(py>maxY)maxY=py;
+    }
+    if(isFinite(minX))box={x:minX,y:minY,width:maxX-minX,height:maxY-minY};
+  }
+  return {t:x.getText(),f:ZXing.BarcodeFormat[x.getBarcodeFormat()],box:box};
+}catch(e){}}
+return null;
 }
-function apply(t,f){
-  fmt=MAP[String(f||'').toLowerCase()]||'CODE128';
-  $('code').value=t;if(navigator.vibrate)navigator.vibrate(60);
-  setTimeout(function(){$('amount').focus()},150);
+function cropToDataURL(srcCanvas,box,padRatio){
+  if(!box)return null;
+  padRatio=padRatio||0.18;
+  var padX=Math.max(8,box.width*padRatio);
+  var padY=Math.max(8,box.height*padRatio);
+  var x=Math.max(0,Math.floor(box.x-padX));
+  var y=Math.max(0,Math.floor(box.y-padY));
+  var w=Math.min(srcCanvas.width-x,Math.ceil(box.width+padX*2));
+  var h=Math.min(srcCanvas.height-y,Math.ceil(box.height+padY*2));
+  if(w<20||h<10)return null;
+  var out=document.createElement('canvas');
+  out.width=w;out.height=h;
+  var octx=out.getContext('2d');
+  octx.fillStyle='#fff';
+  octx.fillRect(0,0,w,h);
+  octx.drawImage(srcCanvas,x,y,w,h,0,0,w,h);
+  // lekko zwiększ kontrast dla czytelności
+  try{
+    var id=octx.getImageData(0,0,w,h),d=id.data;
+    for(var i=0;i<d.length;i+=4){
+      var g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+      var v=g>140?255:0;
+      d[i]=d[i+1]=d[i+2]=v;
+    }
+    octx.putImageData(id,0,0);
+  }catch(e){}
+  return out.toDataURL('image/jpeg',0.88);
+}
+function apply(t,f,imgData){
+fmt=MAP[String(f||'').toLowerCase()]||'CODE128';
+$('code').value=t;
+if(imgData){
+  pendingImg=imgData;
+  $('cropPreview').src=imgData;
+  $('cropPreview').style.display='block';
+}
+if(navigator.vibrate)navigator.vibrate(60);
+setTimeout(function(){$('amount').focus()},150);
 }
 function found(t,f){if(!running)return;stopScan();apply(t,f)}
 function stopScan(){
-  running=false;cancelAnimationFrame(raf);torchOn=false;
-  if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
-  $('vid').srcObject=null;$('scanOv').classList.remove('on');
+running=false;cancelAnimationFrame(raf);torchOn=false;
+if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
+$('vid').srcObject=null;$('scanOv').classList.remove('on');
 }
 function loop(ts){
-  if(!running)return;
-  raf=requestAnimationFrame(loop);
-  var v=$('vid');
-  if(busy||ts-last<110||v.readyState<2||!v.videoWidth)return;
-  last=ts;busy=true;mode^=1;
-  var vw=v.videoWidth,vh=v.videoHeight,sx=0,sy=0,sw=vw,sh=vh;
-  if(mode){sh=Math.round(vh*.4);sy=Math.round((vh-sh)/2)}
-  var k=Math.min(1,1920/sw);cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
-  cx.drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
-  decodeCanvas(cv).then(function(r){busy=false;if(r)found(r.t,r.f)});
+if(!running)return;
+raf=requestAnimationFrame(loop);
+var v=$('vid');
+if(busy||ts-last<110||v.readyState<2||!v.videoWidth)return;
+last=ts;busy=true;mode^=1;
+var vw=v.videoWidth,vh=v.videoHeight,sx=0,sy=0,sw=vw,sh=vh;
+if(mode){sh=Math.round(vh*.4);sy=Math.round((vh-sh)/2)}
+var k=Math.min(1,1920/sw);cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
+cx.drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
+decodeCanvas(cv).then(function(r){busy=false;if(r)found(r.t,r.f)});
 }
 $('scanClose').onclick=stopScan;
 $('scanBtn').onclick=async function(){
-  initDec();
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return toast('Aparat niedostępny – użyj „Zdjęcie kodu”');
-  $('scanOv').classList.add('on');$('scanMsg').textContent='Uruchamiam aparat…';running=true;
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}})}
-  catch(e){stopScan();return toast('Aparat zablokowany – użyj „Zdjęcie kodu”')}
-  var v=$('vid');v.srcObject=stream;try{await v.play()}catch(e){}
-  track=stream.getVideoTracks()[0];
-  var cap=track.getCapabilities?track.getCapabilities():{};
-  try{if(cap.focusMode&&cap.focusMode.indexOf('continuous')>-1)await track.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
-  $('torch').style.display=cap.torch?'':'none';
-  var z=$('zoom');
-  if(cap.zoom){z.min=cap.zoom.min;z.max=cap.zoom.max;z.step=cap.zoom.step||.1;z.value=cap.zoom.min;z.style.display=''}else z.style.display='none';
-  $('scanMsg').textContent='Trzymaj kod w ramce, 15–25 cm od aparatu';
-  raf=requestAnimationFrame(loop);
+initDec();
+if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return toast('Aparat niedostępny – użyj „Zdjęcie kodu”');
+$('scanOv').classList.add('on');$('scanMsg').textContent='Uruchamiam aparat…';running=true;
+try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}})}
+catch(e){stopScan();return toast('Aparat zablokowany – użyj „Zdjęcie kodu”')}
+var v=$('vid');v.srcObject=stream;try{await v.play()}catch(e){}
+track=stream.getVideoTracks()[0];
+var cap=track.getCapabilities?track.getCapabilities():{};
+try{if(cap.focusMode&&cap.focusMode.indexOf('continuous')>-1)await track.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(e){}
+$('torch').style.display=cap.torch?'':'none';
+var z=$('zoom');
+if(cap.zoom){z.min=cap.zoom.min;z.max=cap.zoom.max;z.step=cap.zoom.step||.1;z.value=cap.zoom.min;z.style.display=''}else z.style.display='none';
+$('scanMsg').textContent='Trzymaj kod w ramce, 15–25 cm od aparatu';
+raf=requestAnimationFrame(loop);
 };
 $('torch').onclick=function(){torchOn=!torchOn;try{track.applyConstraints({advanced:[{torch:torchOn}]})}catch(e){}};
 $('zoom').oninput=function(){try{track.applyConstraints({advanced:[{zoom:parseFloat(this.value)}]})}catch(e){}};
 $('photoBtn').onclick=function(){$('photo').click()};
 $('photoBtn2').onclick=function(){stopScan();$('photo').click()};
 $('photo').onchange=async function(){
-  var f=this.files[0];this.value='';if(!f)return;initDec();toast('Szukam kodu na zdjęciu…');
-  try{
-    var bm=await createImageBitmap(f),res=null,sizes=[1600,2400,1000];
-    for(var i=0;i<sizes.length&&!res;i++){
-      var k=Math.min(1,sizes[i]/Math.max(bm.width,bm.height));
-      cv.width=Math.round(bm.width*k);cv.height=Math.round(bm.height*k);
-      cx.drawImage(bm,0,0,cv.width,cv.height);res=await decodeCanvas(cv);
-    }
-    if(res){apply(res.t,res.f);toast('Kod rozpoznany ✓')}else toast('Nie wykryto kodu – zrób ostrzejsze zdjęcie samego kodu');
-  }catch(e){toast('Nie udało się odczytać zdjęcia')}
+var f=this.files[0];this.value='';
+if(!f)return;initDec();toast('Szukam i wycinam kod…');
+pendingImg=null;$('cropPreview').style.display='none';$('cropPreview').src='';
+try{
+  var bm=await createImageBitmap(f),res=null,sizes=[1600,2400,1200,800];
+  for(var i=0;i<sizes.length&&!res;i++){
+    var k=Math.min(1,sizes[i]/Math.max(bm.width,bm.height));
+    cv.width=Math.round(bm.width*k);cv.height=Math.round(bm.height*k);
+    cx.drawImage(bm,0,0,cv.width,cv.height);
+    res=await decodeCanvas(cv);
+  }
+  if(res){
+    var crop=cropToDataURL(cv,res.box,0.22);
+    apply(res.t,res.f,crop);
+    toast(crop?'Kod wycięty i rozpoznany ✓':'Kod rozpoznany ✓');
+  }else toast('Nie wykryto kodu – zrób ostrzejsze zdjęcie samego kodu (z bliska)');
+}catch(e){toast('Nie udało się odczytać zdjęcia')}
 };
 /* instalacja (PWA) */
 try{
-  var c=document.createElement('canvas');c.width=c.height=512;var g=c.getContext('2d');
-  g.fillStyle='#13a05a';g.fillRect(0,0,512,512);g.fillStyle='#fff';
-  [[120,24],[164,12],[192,36],[248,12],[276,24],[320,12],[348,24]].forEach(function(b){g.fillRect(b[0],150,b[1],212)});
-  var icon=c.toDataURL('image/png');
-  var m={name:'Kaucja – kody zwrotu',short_name:'Kaucja',start_url:location.href.split('#')[0],display:'standalone',background_color:'#f4f6f5',theme_color:'#13a05a',icons:[{src:icon,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
-  var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));document.head.appendChild(l);
-  var a=document.createElement('link');a.rel='apple-touch-icon';a.href=icon;document.head.appendChild(a);
+var c=document.createElement('canvas');c.width=c.height=512;var g=c.getContext('2d');
+g.fillStyle='#13a05a';g.fillRect(0,0,512,512);g.fillStyle='#fff';
+[[120,24],[164,12],[192,36],[248,12],[276,24],[320,12],[348,24]].forEach(function(b){g.fillRect(b[0],150,b[1],212)});
+var icon=c.toDataURL('image/png');
+var m={name:'Kaucja – kody zwrotu',short_name:'Kaucja',start_url:location.href.split('#')[0],display:'standalone',background_color:'#f4f6f5',theme_color:'#13a05a',icons:[{src:icon,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+var l=document.createElement('link');l.rel='manifest';l.href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));document.head.appendChild(l);
+var a=document.createElement('link');a.rel='apple-touch-icon';a.href=icon;document.head.appendChild(a);
 }catch(e){}
 var dip=null;
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();dip=e;$('inst').style.display=''});
